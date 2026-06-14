@@ -85,6 +85,9 @@ builder.Services.AddCors(opt => opt.AddPolicy("AllowFrontend", p =>
      .AllowAnyHeader()
      .AllowCredentials()));
 
+// Health checks
+builder.Services.AddHealthChecks();
+
 // Application services
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -127,15 +130,12 @@ using (var scope = app.Services.CreateScope())
     await SchoolKart.Infrastructure.Persistence.DataSeeder.SeedAsync(db);
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
+app.MapHealthChecks("/health");
 app.UseIpRateLimiting();
 app.UseSerilogRequestLogging();
-app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseMiddleware<TenantMiddleware>();
 app.UseAuthentication();
