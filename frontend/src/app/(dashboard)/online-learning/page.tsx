@@ -35,7 +35,6 @@ export default function OnlineLearningPage() {
   const { data: courses, isLoading: coursesLoading } = useQuery({
     queryKey: ['courses'],
     queryFn: () => onlineLearningApi.getCourses({}).then(r => r.data),
-    enabled: tab === 'courses' || tab === 'assignments' || tab === 'quizzes',
   })
 
   const { data: courseDetail } = useQuery({
@@ -281,6 +280,7 @@ export default function OnlineLearningPage() {
       {showScheduleModal && (
         <ScheduleClassModal
           courses={courses?.items ?? []}
+          coursesLoading={coursesLoading}
           onClose={() => setShowScheduleModal(false)}
           onSuccess={() => { setShowScheduleModal(false); qc.invalidateQueries({ queryKey: ['live-classes'] }) }}
         />
@@ -537,7 +537,7 @@ function QuizzesPanel({ courses, onAttempt }: { courses: any[]; onAttempt: (id: 
 }
 
 // ── Schedule Class Modal ───────────────────────────────────────────────────────
-function ScheduleClassModal({ courses, onClose, onSuccess }: any) {
+function ScheduleClassModal({ courses, coursesLoading, onClose, onSuccess }: any) {
   const [form, setForm] = useState({
     courseId: courses[0]?.id ?? '',
     title: '',
@@ -545,6 +545,13 @@ function ScheduleClassModal({ courses, onClose, onSuccess }: any) {
     scheduledAt: '',
     durationMinutes: 60,
   })
+
+  // keep courseId in sync once courses load
+  useEffect(() => {
+    if (!form.courseId && courses[0]?.id) {
+      setForm(p => ({ ...p, courseId: courses[0].id }))
+    }
+  }, [courses])
 
   const mutation = useMutation({
     mutationFn: () => onlineLearningApi.scheduleLiveClass(form.courseId, {
@@ -565,8 +572,14 @@ function ScheduleClassModal({ courses, onClose, onSuccess }: any) {
           <div>
             <label className="text-sm font-medium text-gray-700">Course</label>
             <select value={form.courseId} onChange={e => setForm(p => ({ ...p, courseId: e.target.value }))}
-              className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
-              {courses.map((c: any) => <option key={c.id} value={c.id}>{c.title}</option>)}
+              disabled={coursesLoading}
+              className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-400">
+              {coursesLoading
+                ? <option>Loading courses...</option>
+                : courses.length === 0
+                  ? <option value="">No courses available</option>
+                  : courses.map((c: any) => <option key={c.id} value={c.id}>{c.title}</option>)
+              }
             </select>
           </div>
           <div>
@@ -585,6 +598,7 @@ function ScheduleClassModal({ courses, onClose, onSuccess }: any) {
             <div>
               <label className="text-sm font-medium text-gray-700">Date & Time</label>
               <input type="datetime-local" value={form.scheduledAt}
+                min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                 onChange={e => setForm(p => ({ ...p, scheduledAt: e.target.value }))}
                 className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
