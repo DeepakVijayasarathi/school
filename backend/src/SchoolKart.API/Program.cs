@@ -47,8 +47,9 @@ else
     builder.Services.AddDistributedMemoryCache();
 }
 
-// JWT Auth
-var jwtSecret = builder.Configuration["Jwt:Secret"]!;
+// Validate JWT secret at startup — fail fast rather than issuing weak tokens
+var jwtSecret = builder.Configuration["Jwt:Secret"]
+    ?? throw new InvalidOperationException("Jwt:Secret is not configured. Set it in appsettings or environment variables.");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
     {
@@ -89,11 +90,18 @@ builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>()
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 builder.Services.AddInMemoryRateLimiting();
 
-// CORS — allow all origins
+// CORS — in production restrict to the configured frontend origin
+var frontendOrigin = builder.Configuration["App:FrontendOrigin"] ?? "";
 builder.Services.AddCors(opt => opt.AddPolicy("AllowFrontend", p =>
-    p.AllowAnyOrigin()
-     .AllowAnyMethod()
-     .AllowAnyHeader()));
+{
+    if (builder.Environment.IsDevelopment() || string.IsNullOrWhiteSpace(frontendOrigin))
+        p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+    else
+        p.WithOrigins(frontendOrigin.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+         .AllowAnyMethod()
+         .AllowAnyHeader()
+         .AllowCredentials();
+}));
 
 // Health checks
 builder.Services.AddHealthChecks();
@@ -140,11 +148,30 @@ using (var scope = app.Services.CreateScope())
     await SchoolKart.Infrastructure.Persistence.DataSeeder.SeedAsync(db);
 }
 
-app.UseSwagger();
-app.UseSwaggerUI();
+// Expose Swagger only in development
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.MapHealthChecks("/health");
 app.UseCors("AllowFrontend");        // CORS before rate limiting so OPTIONS preflight is never blocked
+
+// Security headers on every response
+app.Use(async (ctx, next) =>
+{
+    ctx.Response.Headers["X-Content-Type-Options"]    = "nosniff";
+    ctx.Response.Headers["X-Frame-Options"]           = "DENY";
+    ctx.Response.Headers["X-XSS-Protection"]          = "1; mode=block";
+    ctx.Response.Headers["Referrer-Policy"]            = "strict-origin-when-cross-origin";
+    ctx.Response.Headers["Permissions-Policy"]         = "camera=(), microphone=(), geolocation=()";
+    // Strict-Transport-Security only over HTTPS
+    if (ctx.Request.IsHttps)
+        ctx.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+    await next();
+});
+
 app.UseIpRateLimiting();
 app.UseSerilogRequestLogging();
 app.UseMiddleware<TenantMiddleware>();

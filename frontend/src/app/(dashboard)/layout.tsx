@@ -6,6 +6,31 @@ import { useAuthStore } from '@/store/auth'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Bell, Search, ChevronRight, Command, Menu } from 'lucide-react'
 
+const PAGE_TITLES: Record<string, string> = {
+  '/dashboard':         'Dashboard',
+  '/students':          'Students',
+  '/admissions':        'Admissions',
+  '/attendance':        'Attendance',
+  '/timetable':         'Timetable',
+  '/academic-calendar': 'Academic Calendar',
+  '/exams':             'Exams',
+  '/fees':              'Fees',
+  '/online-learning':   'Online Learning',
+  '/homework':          'Homework',
+  '/library':           'Library',
+  '/transport':         'Transport',
+  '/hostel':            'Hostel',
+  '/inventory':         'Inventory',
+  '/visitor-management':'Visitor Management',
+  '/communication':     'Communication',
+  '/hr':                'HR & Payroll',
+  '/accounting':        'Accounting',
+  '/reports':           'Reports',
+  '/parent-portal':     'Parent Portal',
+  '/school-setup':      'School Setup',
+  '/settings':          'Settings',
+}
+
 function useBreadcrumb() {
   const pathname = usePathname()
   const segments = pathname.split('/').filter(Boolean)
@@ -48,9 +73,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => el.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Close mobile sidebar on route change
+  // Close mobile sidebar on route change + update document title
   useEffect(() => {
     setMobileOpen(false)
+    const base = Object.entries(PAGE_TITLES).find(([k]) => pathname === k || pathname.startsWith(k + '/'))?.[1]
+    document.title = base ? `${base} · SchoolKart ERP` : 'SchoolKart ERP'
   }, [pathname])
 
   if (!hasHydrated) return (

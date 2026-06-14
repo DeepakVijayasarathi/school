@@ -3,13 +3,25 @@ import toast from 'react-hot-toast'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000'
 
+// SSR-safe storage helpers
+const storage = {
+  get: (key: string) => (typeof window !== 'undefined' ? localStorage.getItem(key) : null),
+  set: (key: string, val: string) => { if (typeof window !== 'undefined') localStorage.setItem(key, val) },
+  remove: (...keys: string[]) => { if (typeof window !== 'undefined') keys.forEach(k => localStorage.removeItem(k)) },
+}
+
+function clearAuthAndRedirect() {
+  storage.remove('access_token', 'refresh_token')
+  if (typeof window !== 'undefined') window.location.href = '/login'
+}
+
 export const api = axios.create({
   baseURL: `${API_URL}/api`,
   headers: { 'Content-Type': 'application/json' },
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
+  const token = storage.get('access_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
@@ -36,12 +48,12 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const refreshToken = localStorage.getItem('refresh_token')
+        const refreshToken = storage.get('refresh_token')
         if (!refreshToken) throw new Error('No refresh token')
 
         const { data } = await axios.post(`${API_URL}/api/auth/refresh`, { refreshToken })
-        localStorage.setItem('access_token', data.accessToken)
-        localStorage.setItem('refresh_token', data.refreshToken)
+        storage.set('access_token', data.accessToken)
+        storage.set('refresh_token', data.refreshToken)
 
         queue.forEach((cb) => cb(data.accessToken))
         queue = []
@@ -49,8 +61,7 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${data.accessToken}`
         return api(original)
       } catch {
-        localStorage.clear()
-        window.location.href = '/login'
+        clearAuthAndRedirect()
       } finally {
         isRefreshing = false
       }

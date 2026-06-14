@@ -19,6 +19,7 @@ public class FeesController(AppDbContext db, ITenantContext tenant) : Controller
     public async Task<IActionResult> GetCategories(CancellationToken ct)
     {
         var cats = await db.Set<FeeCategory>()
+            .AsNoTracking()
             .Where(c => c.TenantId == tenant.TenantId && c.IsActive)
             .OrderBy(c => c.SortOrder)
             .Select(c => new { c.Id, c.Name, c.Code, c.Description })
@@ -50,6 +51,7 @@ public class FeesController(AppDbContext db, ITenantContext tenant) : Controller
             (await db.AcademicYears.FirstOrDefaultAsync(a => a.TenantId == tenant.TenantId && a.IsCurrent, ct))?.Id;
 
         var q = db.Set<FeeStructure>()
+            .AsNoTracking()
             .Include(s => s.Category)
             .Where(s => s.TenantId == tenant.TenantId && s.IsActive);
 
@@ -101,6 +103,7 @@ public class FeesController(AppDbContext db, ITenantContext tenant) : Controller
             (await db.AcademicYears.FirstOrDefaultAsync(a => a.TenantId == tenant.TenantId && a.IsCurrent, ct))?.Id;
 
         var fees = await db.Set<StudentFee>()
+            .AsNoTracking()
             .Include(f => f.FeeStructure!.Category)
             .Where(f => f.StudentId == studentId && f.TenantId == tenant.TenantId &&
                         (!yearId.HasValue || f.AcademicYearId == yearId.Value))
@@ -186,16 +189,19 @@ public class FeesController(AppDbContext db, ITenantContext tenant) : Controller
         if (req.Amount > remaining)
             return BadRequest($"Amount exceeds pending balance of {remaining}");
 
-        // Generate receipt number
-        var lastReceipt = await db.Set<FeePayment>()
-            .Where(p => p.TenantId == tenant.TenantId)
-            .OrderByDescending(p => p.PaidAt)
-            .FirstOrDefaultAsync(ct);
-
+        // Generate receipt number: use count-based approach to avoid race conditions
         var year = DateTime.UtcNow.Year.ToString()[2..];
-        var lastSeq = lastReceipt is not null && int.TryParse(lastReceipt.ReceiptNumber.Split('/').LastOrDefault(), out var parsed) ? parsed : 0;
-        var seq = lastSeq + 1;
+        var paymentCount = await db.Set<FeePayment>()
+            .CountAsync(p => p.TenantId == tenant.TenantId, ct);
+        var seq = paymentCount + 1;
         var receiptNumber = $"RCP/{year}/{seq:D6}";
+
+        // Collision guard
+        while (await db.Set<FeePayment>().AnyAsync(p => p.ReceiptNumber == receiptNumber && p.TenantId == tenant.TenantId, ct))
+        {
+            seq++;
+            receiptNumber = $"RCP/{year}/{seq:D6}";
+        }
 
         var payment = new FeePayment
         {
@@ -226,6 +232,7 @@ public class FeesController(AppDbContext db, ITenantContext tenant) : Controller
     public async Task<IActionResult> GetReceipts(Guid studentId, CancellationToken ct)
     {
         var receipts = await db.Set<FeePayment>()
+            .AsNoTracking()
             .Where(p => p.StudentId == studentId && p.TenantId == tenant.TenantId)
             .OrderByDescending(p => p.PaidAt)
             .Select(p => new { p.Id, p.ReceiptNumber, p.Amount, p.Method, p.PaidAt, p.Notes })

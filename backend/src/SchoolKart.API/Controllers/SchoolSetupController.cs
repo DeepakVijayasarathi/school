@@ -18,6 +18,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     public async Task<IActionResult> GetSchoolInfo(CancellationToken ct)
     {
         var info = await db.Tenants
+            .AsNoTracking()
             .Where(t => t.Id == tenant.TenantId)
             .Select(t => new {
                 t.Id, t.Name, t.Phone, t.Email, t.Website,
@@ -54,6 +55,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     public async Task<IActionResult> GetAcademicYears(CancellationToken ct)
     {
         var years = await db.AcademicYears
+            .AsNoTracking()
             .Where(a => a.TenantId == tenant.TenantId)
             .OrderByDescending(a => a.StartDate)
             .Select(a => new { a.Id, a.Name, a.StartDate, a.EndDate, a.IsCurrent, a.IsLocked })
@@ -126,6 +128,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     public async Task<IActionResult> GetCampuses(CancellationToken ct)
     {
         var campuses = await db.Campuses
+            .AsNoTracking()
             .Where(c => c.TenantId == tenant.TenantId && c.IsActive)
             .Select(c => new { c.Id, c.Name, c.Code, c.City, c.Phone, c.Email, c.IsActive })
             .ToListAsync(ct);
@@ -183,6 +186,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     public async Task<IActionResult> GetClasses([FromQuery] Guid? campusId, CancellationToken ct)
     {
         var q = db.Classes
+            .AsNoTracking()
             .Where(c => c.TenantId == tenant.TenantId && c.IsActive);
 
         if (campusId.HasValue) q = q.Where(c => c.CampusId == campusId);
@@ -240,6 +244,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
             (await db.AcademicYears.FirstOrDefaultAsync(a => a.TenantId == tenant.TenantId && a.IsCurrent, ct))?.Id;
 
         var q = db.Sections
+            .AsNoTracking()
             .Include(s => s.ClassTeacher)
             .Where(s => s.TenantId == tenant.TenantId && s.IsActive);
 
@@ -309,6 +314,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     public async Task<IActionResult> GetSubjects(CancellationToken ct)
     {
         var subjects = await db.Subjects
+            .AsNoTracking()
             .Where(s => s.TenantId == tenant.TenantId && s.IsActive)
             .OrderBy(s => s.Name)
             .Select(s => new { s.Id, s.Name, s.Code, type = s.Type.ToString().ToLower() })

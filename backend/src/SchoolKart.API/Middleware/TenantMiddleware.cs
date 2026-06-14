@@ -1,20 +1,32 @@
 using System.Security.Claims;
+using Microsoft.Extensions.Caching.Memory;
 using SchoolKart.Application.Common;
+using SchoolKart.Domain.Entities;
 using SchoolKart.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace SchoolKart.API.Middleware;
 
-public class TenantMiddleware(RequestDelegate next)
+public class TenantMiddleware(RequestDelegate next, IMemoryCache cache)
 {
     public async Task InvokeAsync(HttpContext ctx, AppDbContext db)
     {
         if (ctx.User.Identity?.IsAuthenticated == true)
         {
             var tenantIdClaim = ctx.User.FindFirst("tid")?.Value;
-            if (Guid.TryParse(tenantIdClaim, out var tenantId))
+            if (Guid.TryParse(tenantIdClaim, out var tenantId) && tenantId != Guid.Empty)
             {
-                var tenant = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId);
+                var cacheKey = $"tenant:{tenantId}";
+                if (!cache.TryGetValue(cacheKey, out Tenant? tenant))
+                {
+                    tenant = await db.Tenants
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(t => t.Id == tenantId);
+
+                    if (tenant is not null)
+                        cache.Set(cacheKey, tenant, TimeSpan.FromMinutes(5));
+                }
+
                 if (tenant is null || !tenant.IsActive)
                 {
                     ctx.Response.StatusCode = 403;

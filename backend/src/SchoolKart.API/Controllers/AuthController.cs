@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SchoolKart.Application.Auth;
 using SchoolKart.Application.Common;
 
@@ -88,6 +89,40 @@ public class AuthController(IAuthService authService, ITenantContext tenantConte
         return result.IsSuccess ? Ok(result.Data) : StatusCode(result.StatusCode, new { error = result.Error });
     }
 
+    [HttpGet("profile")]
+    [Authorize]
+    public async Task<IActionResult> GetProfile(
+        [FromServices] SchoolKart.Infrastructure.Persistence.AppDbContext db,
+        CancellationToken ct)
+    {
+        var user = await db.Users
+            .AsNoTracking()
+            .Where(u => u.Id == tenantContext.UserId)
+            .Select(u => new { u.Id, u.FirstName, u.LastName, u.Email, u.Phone, u.ProfilePicture })
+            .FirstOrDefaultAsync(ct);
+
+        return user is null ? NotFound() : Ok(user);
+    }
+
+    [HttpPut("profile")]
+    [Authorize]
+    public async Task<IActionResult> UpdateProfile(
+        [FromBody] UpdateProfileRequest request,
+        [FromServices] SchoolKart.Infrastructure.Persistence.AppDbContext db,
+        CancellationToken ct)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == tenantContext.UserId, ct);
+        if (user is null) return NotFound();
+
+        if (!string.IsNullOrWhiteSpace(request.FirstName)) user.FirstName = request.FirstName.Trim();
+        if (!string.IsNullOrWhiteSpace(request.LastName))  user.LastName  = request.LastName.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Email))     user.Email     = request.Email.Trim().ToLower();
+        if (!string.IsNullOrWhiteSpace(request.Phone))     user.Phone     = request.Phone.Trim();
+
+        await db.SaveChangesAsync(ct);
+        return Ok();
+    }
+
     [HttpPost("verify-email")]
     [Authorize]
     public async Task<IActionResult> VerifyEmail([FromBody] string otp, CancellationToken ct)
@@ -104,3 +139,5 @@ public class AuthController(IAuthService authService, ITenantContext tenantConte
         return result.IsSuccess ? Ok() : StatusCode(result.StatusCode, new { error = result.Error });
     }
 }
+
+public record UpdateProfileRequest(string? FirstName, string? LastName, string? Email, string? Phone);

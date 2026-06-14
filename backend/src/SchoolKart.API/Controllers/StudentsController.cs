@@ -22,6 +22,7 @@ public class StudentsController(AppDbContext db, ITenantContext tenant) : Contro
             (await db.AcademicYears.FirstOrDefaultAsync(a => a.TenantId == tenant.TenantId && a.IsCurrent, ct))?.Id;
 
         var q = db.StudentEnrollments
+            .AsNoTracking()
             .Include(e => e.Student)
             .Include(e => e.Class)
             .Include(e => e.Section)
@@ -81,6 +82,7 @@ public class StudentsController(AppDbContext db, ITenantContext tenant) : Contro
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
         var student = await db.Students
+            .AsNoTracking()
             .Include(s => s.Guardians).ThenInclude(sg => sg.Guardian)
             .Include(s => s.Documents)
             .Include(s => s.Enrollments).ThenInclude(e => e.AcademicYear)
@@ -149,15 +151,20 @@ public class StudentsController(AppDbContext db, ITenantContext tenant) : Contro
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateStudentRequest request, CancellationToken ct)
     {
-        // Generate admission number
-        var lastStudent = await db.Students
-            .Where(s => s.TenantId == tenant.TenantId)
-            .OrderByDescending(s => s.CreatedAt)
-            .FirstOrDefaultAsync(ct);
+        // Atomic admission number: count existing students for this tenant (safe under concurrency)
+        var existing = await db.Students
+            .CountAsync(s => s.TenantId == tenant.TenantId, ct);
 
         var year = DateTime.UtcNow.Year.ToString()[2..];
-        var seq = (lastStudent is null ? 1 : int.Parse(lastStudent.AdmissionNumber.Split('/').Last()) + 1);
+        var seq = existing + 1;
         var admissionNumber = $"ADM/{year}/{seq:D4}";
+
+        // Guard against duplicate (race condition: re-count if collision)
+        while (await db.Students.AnyAsync(s => s.AdmissionNumber == admissionNumber && s.TenantId == tenant.TenantId, ct))
+        {
+            seq++;
+            admissionNumber = $"ADM/{year}/{seq:D4}";
+        }
 
         var student = new Student
         {

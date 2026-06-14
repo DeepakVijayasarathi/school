@@ -9,10 +9,11 @@ import {
 } from 'recharts'
 import {
   Users, DollarSign, UserCheck, TrendingUp, TrendingDown,
-  ArrowUpRight, AlertCircle, BookOpen, Activity, Sparkles,
+  ArrowUpRight, AlertCircle, Activity, Sparkles,
   GraduationCap,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
+import { SkeletonMetricCard } from '@/components/ui/SkeletonCard'
 
 // ── Custom tooltip ────────────────────────────────────────────────────────────
 const ChartTooltip = ({ active, payload, label }: any) => {
@@ -77,24 +78,11 @@ function MetricCard({ label, value, sub, trend, trendLabel, gradient, icon: Icon
   )
 }
 
-// ── Activity row ──────────────────────────────────────────────────────────────
-function StatRow({ icon: Icon, bg, title, value, valueColor = 'text-gray-900' }: any) {
-  return (
-    <div className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
-      <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', bg)}>
-        <Icon className="w-4 h-4" />
-      </div>
-      <span className="text-sm text-gray-600 flex-1">{title}</span>
-      <span className={cn('text-sm font-bold', valueColor)}>{value}</span>
-    </div>
-  )
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user } = useAuthStore()
 
-  const { data: overview } = useQuery({
+  const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: ['report-overview'],
     queryFn: () => reportsApi.getOverview().then(r => r.data),
   })
@@ -178,10 +166,21 @@ export default function DashboardPage() {
 
       {/* ── Metric cards ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard label="Total Students"   value={overview?.totalStudents ?? '—'}          sub="Across all classes"     trend="up"   trendLabel="+12%"             gradient="gradient-blue"   icon={GraduationCap} delay={0}   />
-        <MetricCard label="Fee Collected"    value={formatCurrency(overview?.feeCollectedThisMonth ?? 0)} sub="This month" trend="up"   trendLabel="+8%"              gradient="gradient-green"  icon={DollarSign}    delay={75}  />
-        <MetricCard label="Present Today"    value={`${todayRate}%`}                          sub={`${todayPresent} of ${todayTotal} students`} trend={todayRate >= 75 ? 'up' : 'down'} trendLabel={`${todayPresent} present`} gradient="gradient-purple" icon={UserCheck} delay={150} />
-        <MetricCard label="Outstanding Dues" value={formatCurrency(overview?.totalOutstanding ?? 0)}     sub="Pending fee dues"      trend="down" trendLabel="Needs action"        gradient="gradient-rose"   icon={AlertCircle}   delay={225} />
+        {overviewLoading ? (
+          <>
+            <SkeletonMetricCard />
+            <SkeletonMetricCard />
+            <SkeletonMetricCard />
+            <SkeletonMetricCard />
+          </>
+        ) : (
+          <>
+            <MetricCard label="Total Students"   value={overview?.totalStudents ?? '—'}          sub="Across all classes"     trend="up"   trendLabel="+12%"             gradient="gradient-blue"   icon={GraduationCap} delay={0}   />
+            <MetricCard label="Fee Collected"    value={formatCurrency(overview?.feeCollectedThisMonth ?? 0)} sub="This month" trend="up"   trendLabel="+8%"              gradient="gradient-green"  icon={DollarSign}    delay={75}  />
+            <MetricCard label="Present Today"    value={`${todayRate}%`}                          sub={`${todayPresent} of ${todayTotal} students`} trend={todayRate >= 75 ? 'up' : 'down'} trendLabel={`${todayPresent} present`} gradient="gradient-purple" icon={UserCheck} delay={150} />
+            <MetricCard label="Outstanding Dues" value={formatCurrency(overview?.totalOutstanding ?? 0)}     sub="Pending fee dues"      trend="down" trendLabel="Needs action"        gradient="gradient-rose"   icon={AlertCircle}   delay={225} />
+          </>
+        )}
       </div>
 
       {/* ── Charts row ───────────────────────────────────────────────────────── */}

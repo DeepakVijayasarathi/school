@@ -6,8 +6,18 @@ import { Providers } from './providers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'SchoolKart ERP',
-  description: 'Complete School Management System',
+  title: {
+    default:  'SchoolKart ERP',
+    template: '%s · SchoolKart ERP',
+  },
+  description: 'Complete School Management System — students, attendance, fees, HR, and more.',
+  robots: { index: false, follow: false },
+  openGraph: {
+    type:        'website',
+    siteName:    'SchoolKart ERP',
+    title:       'SchoolKart ERP',
+    description: 'Complete School Management System',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
