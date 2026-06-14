@@ -15,7 +15,7 @@ WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --legacy-peer-deps
 COPY frontend/ .
-RUN npm run build
+RUN mkdir -p public && npm run build
 
 # ── Stage 3: Runtime (both services in one container) ─────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
