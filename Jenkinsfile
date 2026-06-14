@@ -4,8 +4,8 @@ pipeline {
     environment {
         IMAGE_NAME      = "schoolkart-erp"
         CONTAINER_NAME  = "schoolkart-app"
-        PORT_FRONTEND   = "3000"
-        PORT_BACKEND    = "8080"
+        PORT_FRONTEND   = "1000"
+        PORT_BACKEND    = "8083"
 
         DB_HOST         = "5.223.64.206"
         DB_PORT         = "5432"
@@ -115,8 +115,8 @@ pipeline {
     post {
         success {
             echo "Deployment successful — build #${BUILD_NUMBER}"
-            echo "Frontend: http://localhost:${PORT_FRONTEND}"
-            echo "Backend API: http://localhost:${PORT_BACKEND}/swagger"
+            echo "Frontend: http://${SERVER_IP}:${PORT_FRONTEND}"
+            echo "Backend API: http://${SERVER_IP}:${PORT_BACKEND}/swagger"
         }
         failure {
             echo "Build #${BUILD_NUMBER} failed — rolling back to previous image"
