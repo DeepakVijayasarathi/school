@@ -291,6 +291,37 @@ public class AdmissionController(AppDbContext db, ITenantContext tenant) : Contr
         return Ok(meritList);
     }
 
+    [HttpGet("applications/{id:guid}/letter")]
+    public async Task<IActionResult> GetAdmissionLetter(Guid id, CancellationToken ct)
+    {
+        var app = await db.Set<AdmissionApplication>()
+            .FirstOrDefaultAsync(a => a.Id == id && a.TenantId == tenant.TenantId, ct);
+        if (app is null) return NotFound();
+
+        var tenant_ = await db.Tenants
+            .FirstOrDefaultAsync(t => t.Id == tenant.TenantId, ct);
+
+        return Ok(new
+        {
+            applicationNumber = app.ApplicationNumber,
+            studentName = $"{app.StudentFirstName} {app.StudentLastName}".Trim(),
+            fatherName = app.FatherName,
+            motherName = app.MotherName,
+            dateOfBirth = app.DateOfBirth,
+            gender = app.Gender,
+            classSeeking = app.ClassId.HasValue ? app.ClassId.ToString() : null,
+            contactPhone = app.ContactPhone,
+            contactEmail = app.ContactEmail,
+            address = app.Address,
+            city = app.City,
+            state = app.State,
+            status = app.Status,
+            applicationDate = app.CreatedAt,
+            schoolName = tenant_?.Name ?? "SchoolKart School",
+            letterDate = DateTime.UtcNow
+        });
+    }
+
     [HttpPost("applications/{id:guid}/convert-to-student")]
     [HttpPost("applications/{id:guid}/convert")]
     public async Task<IActionResult> ConvertToStudent(Guid id, [FromBody] ConvertToStudentRequest req, CancellationToken ct)

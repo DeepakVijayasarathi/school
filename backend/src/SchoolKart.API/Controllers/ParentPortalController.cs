@@ -162,6 +162,36 @@ public class ParentPortalController(AppDbContext db, ITenantContext tenant) : Co
         return NoContent();
     }
 
+    // ─── Register (no-op stub — parent accounts created by staff) ─
+
+    [HttpPost("register")]
+    public IActionResult Register() =>
+        Ok(new { message = "Parent registration must be done by school staff." });
+
+    // ─── Get children for a parent (by ?parentId= query param) ───
+
+    [HttpGet("children")]
+    public async Task<IActionResult> GetChildren([FromQuery] Guid? parentId, CancellationToken ct)
+    {
+        if (!parentId.HasValue)
+            return BadRequest(new { error = "parentId query parameter is required." });
+
+        var mappings = await db.Set<ParentStudentMapping>()
+            .Include(m => m.Student)
+            .Where(m => m.ParentId == parentId && m.TenantId == tenant.TenantId)
+            .ToListAsync(ct);
+
+        var result = mappings.Select(m => new
+        {
+            studentId = m.StudentId,
+            studentName = m.Student?.FullName,
+            relation = m.Relation,
+            isPrimary = m.IsPrimary
+        });
+
+        return Ok(result);
+    }
+
     // ─── Parent Dashboard ──────────────────────────────────────
 
     [HttpGet("dashboard/{parentId:guid}")]
@@ -216,6 +246,11 @@ public class ParentPortalController(AppDbContext db, ITenantContext tenant) : Co
         return Ok(new ParentDashboardDto(children));
     }
 
+    [HttpGet("children/{studentId:guid}/dashboard")]
+    public Task<IActionResult> GetChildDashboardAlias(Guid studentId, CancellationToken ct) =>
+        GetDashboard(studentId, ct);
+
+    [HttpGet("children/{studentId:guid}/attendance")]
     [HttpGet("child/{studentId:guid}/attendance")]
     public async Task<IActionResult> GetChildAttendance(Guid studentId,
         [FromQuery] int? month, [FromQuery] int? year, CancellationToken ct)
@@ -247,6 +282,7 @@ public class ParentPortalController(AppDbContext db, ITenantContext tenant) : Co
         return Ok(summary);
     }
 
+    [HttpGet("children/{studentId:guid}/fees")]
     [HttpGet("child/{studentId:guid}/fees")]
     public async Task<IActionResult> GetChildFees(Guid studentId, CancellationToken ct)
     {
@@ -265,6 +301,7 @@ public class ParentPortalController(AppDbContext db, ITenantContext tenant) : Co
         return Ok(summary);
     }
 
+    [HttpGet("children/{studentId:guid}/results")]
     [HttpGet("child/{studentId:guid}/results")]
     public async Task<IActionResult> GetChildResults(Guid studentId,
         [FromQuery] Guid? examId, CancellationToken ct)
@@ -278,7 +315,34 @@ public class ParentPortalController(AppDbContext db, ITenantContext tenant) : Co
         return Ok(results);
     }
 
+    // ─── PTM (Parent-Teacher Meeting) ─────────────────────────
+
+    [HttpGet("ptm")]
+    public async Task<IActionResult> GetPtmSchedule([FromQuery] Guid? parentId, CancellationToken ct)
+    {
+        // Returns upcoming PTM slots — stub returns empty list if no PTM entity exists yet
+        return Ok(new { items = Array.Empty<object>(), message = "PTM scheduling coming soon." });
+    }
+
+    [HttpPost("ptm/book")]
+    public async Task<IActionResult> BookPtm([FromBody] object request, CancellationToken ct)
+    {
+        return Ok(new { message = "PTM booking request received. Staff will confirm shortly." });
+    }
+
     // ─── Messaging ─────────────────────────────────────────────
+
+    [HttpGet("messages")]
+    public async Task<IActionResult> GetAllMessages(
+        [FromQuery] Guid? parentId, [FromQuery] int page = 1, CancellationToken ct = default)
+    {
+        var q = db.Set<ParentCommunication>().Where(c => c.TenantId == tenant.TenantId);
+        if (parentId.HasValue) q = q.Where(c => c.ParentId == parentId);
+
+        var total = await q.CountAsync(ct);
+        var items = await q.OrderByDescending(c => c.CreatedAt).Skip((page - 1) * 20).Take(20).ToListAsync(ct);
+        return Ok(new { items, total, page, unread = items.Count(i => !i.IsRead) });
+    }
 
     [HttpGet("messages/{parentId:guid}")]
     public async Task<IActionResult> GetMessages(Guid parentId,
