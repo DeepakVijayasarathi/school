@@ -53,7 +53,7 @@ public class TenantContext(IHttpContextAccessor httpContextAccessor) : ITenantCo
 
     public Guid TenantId => Guid.Parse(_user?.FindFirst("tid")?.Value ?? Guid.Empty.ToString());
     public string TenantSlug => _user?.FindFirst("slug")?.Value ?? "";
-    public Guid UserId => Guid.Parse(_user?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? Guid.Empty.ToString());
+    public Guid UserId => Guid.Parse(_user?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value ?? Guid.Empty.ToString());
     public string UserRole => _user?.FindFirst("role")?.Value ?? "";
     public string[] Permissions => _user?.FindFirst("perms")?.Value?.Split(',') ?? [];
 

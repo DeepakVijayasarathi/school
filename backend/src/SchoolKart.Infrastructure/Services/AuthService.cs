@@ -97,7 +97,7 @@ public class AuthService(
         if (purpose != "2fa")
             return Result<LoginResponse>.Failure("Invalid token purpose", 401);
 
-        var userId = Guid.Parse(principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value!);
+        var userId = Guid.Parse(principal.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value!);
         var user = await db.Users.Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.Id == userId, ct);
 
@@ -184,7 +184,7 @@ public class AuthService(
         if (principal is null)
             return Result<bool>.Failure("Invalid or expired token", 401);
 
-        var userId = Guid.Parse(principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value!);
+        var userId = Guid.Parse(principal.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value!);
         var key = $"pwd_reset:{userId}";
         var otpHash = await cache.GetStringAsync(key, ct);
 

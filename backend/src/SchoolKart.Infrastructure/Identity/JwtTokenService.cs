@@ -92,7 +92,7 @@ public class JwtTokenService(IConfiguration config) : IJwtTokenService
     {
         try
         {
-            var handler = new JwtSecurityTokenHandler();
+            var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
 
             var principal = handler.ValidateToken(token, new TokenValidationParameters
