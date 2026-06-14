@@ -45,13 +45,11 @@ export default function TransportPage() {
   const { data: vehicles, isLoading: vehiclesLoading } = useQuery({
     queryKey: ['vehicles'],
     queryFn: () => transportApi.getVehicles().then(r => r.data),
-    enabled: tab === 'vehicles',
   })
 
   const { data: studentTransport, isLoading: stLoading } = useQuery({
     queryKey: ['student-transport', selectedRouteId],
     queryFn: () => transportApi.getStudentTransport({ routeId: selectedRouteId || undefined }).then(r => r.data),
-    enabled: tab === 'students',
   })
 
   const addRouteMutation = useMutation({

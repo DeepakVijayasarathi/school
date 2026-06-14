@@ -174,6 +174,9 @@ public class FeesController(AppDbContext db, ITenantContext tenant) : Controller
     [HttpPost("pay")]
     public async Task<IActionResult> CollectPayment([FromBody] CollectPaymentRequest req, CancellationToken ct)
     {
+        if (req.Amount <= 0)
+            return BadRequest(new { error = "Payment amount must be greater than zero" });
+
         var fee = await db.Set<StudentFee>()
             .FirstOrDefaultAsync(f => f.Id == req.StudentFeeId && f.TenantId == tenant.TenantId, ct);
 
@@ -190,7 +193,8 @@ public class FeesController(AppDbContext db, ITenantContext tenant) : Controller
             .FirstOrDefaultAsync(ct);
 
         var year = DateTime.UtcNow.Year.ToString()[2..];
-        var seq = lastReceipt is null ? 1 : int.Parse(lastReceipt.ReceiptNumber.Split('/').Last()) + 1;
+        var lastSeq = lastReceipt is not null && int.TryParse(lastReceipt.ReceiptNumber.Split('/').LastOrDefault(), out var parsed) ? parsed : 0;
+        var seq = lastSeq + 1;
         var receiptNumber = $"RCP/{year}/{seq:D6}";
 
         var payment = new FeePayment

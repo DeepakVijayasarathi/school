@@ -157,30 +157,32 @@ function CrudTab({ endpoint, columns, createForm, title }: any) {
       {isLoading ? (
         <div className="p-8 text-center text-gray-400">Loading...</div>
       ) : (
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              {columns.map((c: any) => <th key={c.key} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{c.label}</th>)}
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {items.map((item: any) => (
-              <tr key={item.id} className="hover:bg-gray-50">
-                {columns.map((c: any) => (
-                  <td key={c.key} className="px-4 py-3 text-sm">{item[c.key] ?? '—'}</td>
-                ))}
-                <td className="px-4 py-3 flex gap-2">
-                  <button onClick={() => { setEditItem(item); setFormData(item) }}
-                    className="text-blue-600 hover:text-blue-700"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => deleteMutation.mutate(item.id)} className="text-red-400 hover:text-red-600">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px]">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                {columns.map((c: any) => <th key={c.key} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{c.label}</th>)}
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {items.map((item: any) => (
+                <tr key={item.id} className="hover:bg-gray-50">
+                  {columns.map((c: any) => (
+                    <td key={c.key} className="px-4 py-3 text-sm">{item[c.key] ?? '—'}</td>
+                  ))}
+                  <td className="px-4 py-3 flex gap-2">
+                    <button onClick={() => { setEditItem(item); setFormData(item) }}
+                      className="text-blue-600 hover:text-blue-700"><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => deleteMutation.mutate(item.id)} className="text-red-400 hover:text-red-600">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {(showAdd || editItem) && (

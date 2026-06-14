@@ -188,7 +188,8 @@ function AcademicTab({ student }: { student: any }) {
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-gray-700">Enrollment History</h3>
       {student.enrollments?.length > 0 ? (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[480px]">
           <thead className="bg-gray-50">
             <tr>
               {['Academic Year', 'Class', 'Section', 'Roll No', 'Enrolled At'].map(h => (
@@ -208,6 +209,7 @@ function AcademicTab({ student }: { student: any }) {
             ))}
           </tbody>
         </table>
+        </div>
       ) : (
         <p className="text-gray-400 text-sm">No enrollment records found.</p>
       )}
@@ -329,7 +331,8 @@ function FeesTab({ studentId }: { studentId: string }) {
           </div>
         </div>
       )}
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+      <table className="w-full text-sm min-w-[520px]">
         <thead className="bg-gray-50">
           <tr>
             {['Fee Type', 'Amount', 'Paid', 'Balance', 'Due Date', 'Status'].map(h => (
@@ -356,6 +359,7 @@ function FeesTab({ studentId }: { studentId: string }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }
@@ -367,8 +371,8 @@ function ExamsTab({ studentId }: { studentId: string }) {
   })
 
   return (
-    <div>
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm min-w-[520px]">
         <thead className="bg-gray-50">
           <tr>
             {['Exam', 'Subject', 'Max Marks', 'Obtained', 'Grade', 'Result'].map(h => (

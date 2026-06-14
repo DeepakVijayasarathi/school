@@ -114,7 +114,7 @@ export default function TimetablePage() {
         <select value={selectedAcademicYearId} onChange={e => setSelectedAcademicYearId(e.target.value)}
           className="px-3 py-2 border border-gray-200 rounded-lg text-sm">
           <option value="">Select Academic Year</option>
-          {academicYears?.items?.map((y: any) => <option key={y.id} value={y.id}>{y.name}</option>)}
+          {(academicYears as any[])?.map((y: any) => <option key={y.id} value={y.id}>{y.name}</option>)}
         </select>
 
         {view === 'section' ? (

@@ -117,7 +117,7 @@ export default function ExamsPage() {
                       {exam.isPublished ? 'Published' : 'Draft'}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5 capitalize">{exam.type?.replace('_', ' ')}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 capitalize">{exam.type?.replace(/_/g, ' ')}</p>
                   {exam.startDate && (
                     <p className="text-xs text-gray-400">{formatDate(exam.startDate)}{exam.endDate ? ` – ${formatDate(exam.endDate)}` : ''}</p>
                   )}
@@ -246,7 +246,7 @@ export default function ExamsPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Type</label>
                   <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className={inputCls}>
-                    {EXAM_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>)}
+                    {EXAM_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>)}
                   </select>
                 </div>
                 <div>

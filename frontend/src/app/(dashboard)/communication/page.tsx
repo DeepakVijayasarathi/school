@@ -250,7 +250,8 @@ export default function CommunicationPage() {
           {logsLoading ? (
             <div className="flex items-center justify-center h-48"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
           ) : (
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
               <thead className="bg-gray-50">
                 <tr>
                   {['Channel', 'Recipient', 'Subject / Body', 'Status', 'Sent At'].map(h => (
@@ -290,6 +291,7 @@ export default function CommunicationPage() {
                 )}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
