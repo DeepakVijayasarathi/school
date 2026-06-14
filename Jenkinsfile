@@ -13,7 +13,6 @@ pipeline {
         DB_USER         = "admin"
         DB_PASSWORD     = "ScaleLite2026XkP9mNqR"
         JWT_SECRET      = "schoolkart_jwt_secret_key_2024_prod"
-        REDIS_HOST      = "localhost"
         SERVER_IP           = "93.127.194.128"
         NEXT_PUBLIC_API_URL = "http://93.127.194.128:${PORT_BACKEND}"
     }
@@ -58,7 +57,6 @@ pipeline {
                         --restart unless-stopped \
                         -e ASPNETCORE_ENVIRONMENT=Production \
                         -e ConnectionStrings__DefaultConnection="Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}" \
-                        -e Redis__ConnectionString="${REDIS_HOST}:6379" \
                         -e Jwt__Secret="${JWT_SECRET}" \
                         -e Jwt__Issuer="schoolkart" \
                         -e Jwt__Audience="schoolkart-users" \
@@ -133,7 +131,6 @@ pipeline {
                         --restart unless-stopped \
                         -e ASPNETCORE_ENVIRONMENT=Production \
                         -e ConnectionStrings__DefaultConnection="Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}" \
-                        -e Redis__ConnectionString="${REDIS_HOST}:6379" \
                         -e Jwt__Secret="${JWT_SECRET}" \
                         -e Jwt__Issuer="schoolkart" \
                         -e Jwt__Audience="schoolkart-users" \

@@ -29,12 +29,22 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseNpgsql(npgsqlDataSource,
         b => b.MigrationsAssembly("SchoolKart.Infrastructure")));
 
-// Redis Cache
-builder.Services.AddStackExchangeRedisCache(opt =>
+// Redis Cache — fall back to in-memory when Redis is unavailable
+var redisConnStr = builder.Configuration.GetConnectionString("Redis");
+if (!string.IsNullOrWhiteSpace(redisConnStr)
+    && !redisConnStr.StartsWith("localhost", StringComparison.OrdinalIgnoreCase)
+    && !redisConnStr.StartsWith("127.0.0.1"))
 {
-    opt.Configuration = builder.Configuration.GetConnectionString("Redis");
-    opt.InstanceName = "SchoolKart:";
-});
+    builder.Services.AddStackExchangeRedisCache(opt =>
+    {
+        opt.Configuration = redisConnStr;
+        opt.InstanceName  = "SchoolKart:";
+    });
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+}
 
 // JWT Auth
 var jwtSecret = builder.Configuration["Jwt:Secret"]!;
@@ -133,9 +143,9 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.MapHealthChecks("/health");
+app.UseCors("AllowFrontend");        // CORS before rate limiting so OPTIONS preflight is never blocked
 app.UseIpRateLimiting();
 app.UseSerilogRequestLogging();
-app.UseCors("AllowFrontend");
 app.UseMiddleware<TenantMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
