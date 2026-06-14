@@ -80,10 +80,9 @@ builder.Services.AddInMemoryRateLimiting();
 
 // CORS
 builder.Services.AddCors(opt => opt.AddPolicy("AllowFrontend", p =>
-    p.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? ["http://localhost:3000"])
+    p.AllowAnyOrigin()
      .AllowAnyMethod()
-     .AllowAnyHeader()
-     .AllowCredentials()));
+     .AllowAnyHeader()));
 
 // Health checks
 builder.Services.AddHealthChecks();
