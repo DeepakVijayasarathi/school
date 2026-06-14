@@ -9,7 +9,7 @@ import { Plus, Edit2, Trash2, Check, X, Settings } from 'lucide-react'
 const api = (path: string, opts?: { method?: string; body?: string }) => {
   const method = (opts?.method?.toLowerCase() ?? 'get') as any
   const data = opts?.body ? JSON.parse(opts.body) : undefined
-  return httpClient({ method, url: `/school-setup${path}`, data }).then((r: any) => r.data)
+  return httpClient({ method, url: `/school${path}`, data }).then((r: any) => r.data)
 }
 
 const TABS = [
@@ -234,14 +234,14 @@ function CampusTab() {
 
 function ClassesTab() {
   return <CrudTab title="Classes" endpoint="classes"
-    columns={[{ key: 'name', label: 'Name' }, { key: 'code', label: 'Code' }, { key: 'displayOrder', label: 'Order' }]}
-    createForm={[{ key: 'name', label: 'Class Name (e.g. Class 1)' }, { key: 'code', label: 'Code' }, { key: 'displayOrder', label: 'Display Order', type: 'number' }]} />
+    columns={[{ key: 'name', label: 'Name' }, { key: 'numericLevel', label: 'Order' }]}
+    createForm={[{ key: 'name', label: 'Class Name (e.g. Class 1)' }, { key: 'numericLevel', label: 'Display Order', type: 'number' }]} />
 }
 
 function SectionsTab() {
   return <CrudTab title="Sections" endpoint="sections"
-    columns={[{ key: 'name', label: 'Name' }, { key: 'className', label: 'Class' }, { key: 'capacity', label: 'Capacity' }]}
-    createForm={[{ key: 'classId', label: 'Class ID' }, { key: 'name', label: 'Section Name (e.g. A)' }, { key: 'capacity', label: 'Capacity', type: 'number' }]} />
+    columns={[{ key: 'name', label: 'Name' }, { key: 'className', label: 'Class' }, { key: 'maxStrength', label: 'Capacity' }]}
+    createForm={[{ key: 'classId', label: 'Class ID' }, { key: 'academicYearId', label: 'Academic Year ID' }, { key: 'name', label: 'Section Name (e.g. A)' }, { key: 'maxStrength', label: 'Capacity', type: 'number' }]} />
 }
 
 function SubjectsTab() {

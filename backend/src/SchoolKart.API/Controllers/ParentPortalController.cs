@@ -286,14 +286,26 @@ public class ParentPortalController(AppDbContext db, ITenantContext tenant) : Co
     [HttpGet("child/{studentId:guid}/fees")]
     public async Task<IActionResult> GetChildFees(Guid studentId, CancellationToken ct)
     {
-        var fees = await db.Set<FeeRecord>()
-            .Where(f => f.StudentId == studentId && f.TenantId == tenant.TenantId)
-            .OrderByDescending(f => f.DueDate)
-            .ToListAsync(ct);
+        var fees = await (
+            from f in db.Set<FeeRecord>()
+            join cat in db.Set<FeeCategory>() on f.FeeTypeId equals cat.Id into catJoin
+            from cat in catJoin.DefaultIfEmpty()
+            where f.StudentId == studentId && f.TenantId == tenant.TenantId
+            orderby f.DueDate descending
+            select new
+            {
+                f.Id,
+                feeTypeName = cat != null ? cat.Name : "—",
+                f.Amount,
+                f.PaidAmount,
+                f.DueDate,
+                f.Status
+            }
+        ).ToListAsync(ct);
 
         var summary = new
         {
-            totalDue = fees.Where(f => f.Status != "paid").Sum(f => f.Amount - f.PaidAmount),
+            totalDue = fees.Where(f => f.Status.ToLower() != "paid").Sum(f => f.Amount - f.PaidAmount),
             totalPaid = fees.Sum(f => f.PaidAmount),
             records = fees
         };
@@ -306,12 +318,29 @@ public class ParentPortalController(AppDbContext db, ITenantContext tenant) : Co
     public async Task<IActionResult> GetChildResults(Guid studentId,
         [FromQuery] Guid? examId, CancellationToken ct)
     {
-        var q = db.Set<ExamResult>()
-            .Where(r => r.StudentId == studentId && r.TenantId == tenant.TenantId);
+        var q = db.Set<StudentMark>()
+            .Include(m => m.ExamSchedule!.Exam)
+            .Include(m => m.ExamSchedule!.Subject)
+            .Where(m => m.StudentId == studentId && m.TenantId == tenant.TenantId);
 
-        if (examId.HasValue) q = q.Where(r => r.ExamId == examId);
+        if (examId.HasValue) q = q.Where(m => m.ExamSchedule!.ExamId == examId);
 
-        var results = await q.OrderByDescending(r => r.CreatedAt).ToListAsync(ct);
+        var results = await q
+            .OrderByDescending(m => m.CreatedAt)
+            .Select(m => new
+            {
+                m.Id,
+                examName = m.ExamSchedule!.Exam != null ? m.ExamSchedule.Exam.Name : "—",
+                subjectName = m.ExamSchedule.Subject != null ? m.ExamSchedule.Subject.Name : "—",
+                m.MaxMarks,
+                m.MarksObtained,
+                m.Grade,
+                isPassed = m.IsPass,
+                m.IsAbsent,
+                m.Remarks
+            })
+            .ToListAsync(ct);
+
         return Ok(results);
     }
 

@@ -247,6 +247,7 @@ public class FeesController(AppDbContext db, ITenantContext tenant) : Controller
         var dues = await q
             .Select(f => new
             {
+                StudentId = f.StudentId,
                 f.Student!.AdmissionNumber,
                 StudentName = f.Student.FirstName + " " + f.Student.LastName,
                 f.FinalAmount,
