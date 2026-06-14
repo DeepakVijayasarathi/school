@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { parentPortalApi } from '@/lib/api'
+import { parentsApi } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { Plus, Search, Users, MessageSquare, X, Loader2, Phone, Mail } from 'lucide-react'
@@ -36,30 +36,20 @@ export default function ParentPortalPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['parents', search],
-    queryFn: () => parentPortalApi.getChildren ?
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/parents?search=${search}&pageSize=50`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` }
-      }).then(r => r.json()) : Promise.resolve({ items: [], total: 0 }),
+    queryFn: () => parentsApi.list({ search: search || undefined, pageSize: 50 }).then(r => r.data),
   })
 
   const createMutation = useMutation({
-    mutationFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/parents`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-      },
-      body: JSON.stringify({
-        firstName: form.firstName,
-        lastName: form.lastName || undefined,
-        phone: form.phone,
-        email: form.email || undefined,
-        gender: form.gender || undefined,
-        occupation: form.occupation || undefined,
-        address: form.address || undefined,
-        portalEnabled: form.portalEnabled,
-      }),
-    }).then(r => { if (!r.ok) throw new Error(); return r.json() }),
+    mutationFn: () => parentsApi.create({
+      firstName: form.firstName,
+      lastName: form.lastName || undefined,
+      phone: form.phone,
+      email: form.email || undefined,
+      gender: form.gender || undefined,
+      occupation: form.occupation || undefined,
+      address: form.address || undefined,
+      portalEnabled: form.portalEnabled,
+    }),
     onSuccess: () => {
       toast.success('Parent added successfully')
       setShowAdd(false)

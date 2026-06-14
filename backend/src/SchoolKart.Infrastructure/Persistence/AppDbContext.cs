@@ -117,6 +117,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ParentStudentMapping> ParentStudentMappings => Set<ParentStudentMapping>();
     public DbSet<ParentCommunication> ParentCommunications => Set<ParentCommunication>();
 
+    // Homework
+    public DbSet<Homework> Homeworks => Set<Homework>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

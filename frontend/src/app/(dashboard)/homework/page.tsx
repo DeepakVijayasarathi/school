@@ -2,15 +2,12 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { schoolApi } from '@/lib/api'
+import { schoolApi, homeworkApi } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { Plus, FileText, X, Loader2, BookOpen, Calendar, ChevronRight } from 'lucide-react'
 
 const inputCls = 'w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all'
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? ''
-const authFetch = (url: string, opts?: RequestInit) =>
-  fetch(url, { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('access_token')}` }, ...opts })
 
 const emptyHW = {
   title: '', description: '', subject: '',
@@ -62,30 +59,23 @@ export default function HomeworkPage() {
 
   const { data: homeworkList, isLoading } = useQuery({
     queryKey: ['homework', classId, sectionId],
-    queryFn: async () => {
-      const params = new URLSearchParams()
-      if (classId) params.set('classId', classId)
-      if (sectionId) params.set('sectionId', sectionId)
-      const res = await authFetch(`${API_URL}/api/homework?${params}`)
-      if (!res.ok) return { items: [] }
-      return res.json()
-    },
+    queryFn: () => homeworkApi.list({
+      ...(classId && { classId }),
+      ...(sectionId && { sectionId }),
+    }).then(r => r.data),
   })
 
   const createMutation = useMutation({
-    mutationFn: () => authFetch(`${API_URL}/api/homework`, {
-      method: 'POST',
-      body: JSON.stringify({
-        title: form.title,
-        description: form.description || undefined,
-        subject: form.subject || undefined,
-        classId: form.classId || undefined,
-        sectionId: form.sectionId || undefined,
-        dueDate: form.dueDate || undefined,
-        submissionType: form.submissionType,
-        maxMarks: form.maxMarks ? Number(form.maxMarks) : undefined,
-      }),
-    }).then(r => { if (!r.ok) throw new Error(); return r.json() }),
+    mutationFn: () => homeworkApi.create({
+      title: form.title,
+      description: form.description || undefined,
+      subject: form.subject || undefined,
+      classId: form.classId || undefined,
+      sectionId: form.sectionId || undefined,
+      dueDate: form.dueDate || undefined,
+      submissionType: form.submissionType,
+      maxMarks: form.maxMarks ? Number(form.maxMarks) : undefined,
+    }),
     onSuccess: () => {
       toast.success('Homework assigned successfully')
       setShowAdd(false)
@@ -118,13 +108,13 @@ export default function HomeworkPage() {
         <select value={classId} onChange={e => { setClassId(e.target.value); setSectionId('') }}
           className="px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/30 bg-white text-gray-700">
           <option value="">All Classes</option>
-          {classes?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {(classes as any[])?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         {classId && (
           <select value={sectionId} onChange={e => setSectionId(e.target.value)}
             className="px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/30 bg-white text-gray-700">
             <option value="">All Sections</option>
-            {filterSections?.map((s: any) => <option key={s.id} value={s.id}>Section {s.name}</option>)}
+            {(filterSections as any[])?.map(s => <option key={s.id} value={s.id}>Section {s.name}</option>)}
           </select>
         )}
       </div>
@@ -136,7 +126,7 @@ export default function HomeworkPage() {
         </div>
       ) : hw.length ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {hw.map((item: any) => (
+          {(hw as any[]).map(item => (
             <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md hover:border-blue-100 transition-all cursor-pointer group">
               <div className="flex items-start justify-between gap-2 mb-3">
                 <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
@@ -215,14 +205,14 @@ export default function HomeworkPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Class</label>
                   <select value={form.classId} onChange={e => { setForm(f => ({ ...f, classId: e.target.value, sectionId: '' })) }} className={inputCls}>
                     <option value="">All Classes</option>
-                    {classes?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {(classes as any[])?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Section</label>
                   <select value={form.sectionId} onChange={e => setForm(f => ({ ...f, sectionId: e.target.value }))} className={inputCls} disabled={!form.classId}>
                     <option value="">All Sections</option>
-                    {sections?.map((s: any) => <option key={s.id} value={s.id}>Section {s.name}</option>)}
+                    {(sections as any[])?.map(s => <option key={s.id} value={s.id}>Section {s.name}</option>)}
                   </select>
                 </div>
               </div>

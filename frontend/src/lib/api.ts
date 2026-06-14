@@ -308,6 +308,22 @@ export const parentPortalApi = {
   sendMessage: (data: any) => api.post('/parent-portal/messages', data),
 }
 
+export const parentsApi = {
+  list: (params?: any) => api.get('/parents', { params }),
+  get: (id: string) => api.get(`/parents/${id}`),
+  create: (data: any) => api.post('/parents', data),
+  update: (id: string, data: any) => api.put(`/parents/${id}`, data),
+  linkStudent: (data: any) => api.post('/parents/link-student', data),
+  unlinkStudent: (mappingId: string) => api.delete(`/parents/link-student/${mappingId}`),
+}
+
+export const homeworkApi = {
+  list: (params?: any) => api.get('/homework', { params }),
+  create: (data: any) => api.post('/homework', data),
+  update: (id: string, data: any) => api.put(`/homework/${id}`, data),
+  delete: (id: string) => api.delete(`/homework/${id}`),
+}
+
 export const exportApi = {
   students: (params?: any) => api.get('/export/students', { params, responseType: 'blob' }),
   attendance: (params?: any) => api.get('/export/attendance', { params, responseType: 'blob' }),

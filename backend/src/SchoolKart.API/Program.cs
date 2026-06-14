@@ -88,9 +88,11 @@ builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>()
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 builder.Services.AddInMemoryRateLimiting();
 
-// CORS
+// CORS — restrict to configured frontend origin(s); comma-separated list supported
+var rawOrigins = builder.Configuration["FrontendUrl"] ?? "http://localhost:3000,http://localhost:1000";
+var allowedOrigins = rawOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 builder.Services.AddCors(opt => opt.AddPolicy("AllowFrontend", p =>
-    p.AllowAnyOrigin()
+    p.WithOrigins(allowedOrigins)
      .AllowAnyMethod()
      .AllowAnyHeader()));
 

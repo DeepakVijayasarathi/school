@@ -15,6 +15,7 @@ pipeline {
         JWT_SECRET      = "schoolkart_jwt_secret_key_2024_prod"
         SERVER_IP           = "93.127.194.128"
         NEXT_PUBLIC_API_URL = "http://93.127.194.128:${PORT_BACKEND}"
+        FRONTEND_URL        = "http://93.127.194.128:${PORT_FRONTEND}"
     }
 
     stages {
@@ -61,6 +62,7 @@ pipeline {
                         -e Jwt__Issuer="schoolkart" \
                         -e Jwt__Audience="schoolkart-users" \
                         -e NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL}" \
+                        -e FrontendUrl="${FRONTEND_URL}" \
                         -p ${PORT_FRONTEND}:3000 \
                         -p ${PORT_BACKEND}:8080 \
                         -v schoolkart-uploads:/app/uploads \
@@ -135,6 +137,7 @@ pipeline {
                         -e Jwt__Issuer="schoolkart" \
                         -e Jwt__Audience="schoolkart-users" \
                         -e NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL}" \
+                        -e FrontendUrl="${FRONTEND_URL}" \
                         -p ${PORT_FRONTEND}:3000 \
                         -p ${PORT_BACKEND}:8080 \
                         -v schoolkart-uploads:/app/uploads \
