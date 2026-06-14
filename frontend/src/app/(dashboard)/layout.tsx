@@ -24,14 +24,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [hasHydrated, setHasHydrated] = useState(false)
   const { isAuthenticated, user } = useAuthStore()
   const router = useRouter()
   const pathname = usePathname()
   const breadcrumb = useBreadcrumb()
 
   useEffect(() => {
-    if (!isAuthenticated) router.push('/login')
-  }, [isAuthenticated, router])
+    useAuthStore.persist.rehydrate()
+    setHasHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    if (hasHydrated && !isAuthenticated) router.push('/login')
+  }, [isAuthenticated, hasHydrated, router])
 
   // Track scroll for topbar shadow
   useEffect(() => {
@@ -47,6 +53,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setMobileOpen(false)
   }, [pathname])
 
+  if (!hasHydrated) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#f1f5f9' }}>
+      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
   if (!isAuthenticated) return null
 
   return (

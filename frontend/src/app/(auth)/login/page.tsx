@@ -12,8 +12,7 @@ import { Eye, EyeOff, GraduationCap, Loader2, Shield, Zap, Users } from 'lucide-
 
 const loginSchema = z.object({
   tenantSlug: z.string().min(1, 'School ID is required'),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
-  phone: z.string().optional(),
+  email: z.string().min(1, 'Email is required').email('Enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
 })
 
@@ -60,9 +59,8 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const res = await authApi.login({
-        tenantSlug: data.tenantSlug,
-        email: data.email || undefined,
-        phone: data.phone || undefined,
+        tenantSlug: data.tenantSlug.trim(),
+        email: data.email.trim(),
         password: data.password,
       })
 
@@ -76,8 +74,9 @@ export default function LoginPage() {
       setAuth(res.data.user, res.data.accessToken, res.data.refreshToken)
       toast.success(`Welcome, ${res.data.user.fullName}!`)
       router.push('/dashboard')
-    } catch {
-      // handled by axios interceptor
+    } catch (err: any) {
+      const msg = err?.response?.data?.error ?? 'Invalid credentials. Please check your details and try again.'
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -90,7 +89,9 @@ export default function LoginPage() {
       setAuth(res.data.user, res.data.accessToken, res.data.refreshToken)
       toast.success('Logged in successfully!')
       router.push('/dashboard')
-    } catch {
+    } catch (err: any) {
+      const msg = err?.response?.data?.error ?? 'Invalid or expired code. Please try again.'
+      toast.error(msg)
     } finally {
       setLoading(false)
     }

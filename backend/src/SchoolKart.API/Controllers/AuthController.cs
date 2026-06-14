@@ -39,8 +39,9 @@ public class AuthController(IAuthService authService, ITenantContext tenantConte
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken ct)
     {
-        await authService.ForgotPasswordAsync(request, ct);
-        return Ok(new { message = "If an account exists, OTP has been sent" });
+        var result = await authService.ForgotPasswordAsync(request, ct);
+        if (!result.IsSuccess) return StatusCode(result.StatusCode, new { error = result.Error });
+        return Ok(new { message = "OTP sent. Use the code to reset your password.", token = result.Data!.Token, otp = result.Data.Otp });
     }
 
     [HttpPost("reset-password")]

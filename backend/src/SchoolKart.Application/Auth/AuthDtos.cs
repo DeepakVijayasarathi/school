@@ -66,3 +66,8 @@ public record TenantDto(
     string Plan,
     string Currency
 );
+
+public record ForgotPasswordResult(
+    string Token,
+    string? Otp  // returned in non-production environments; null when email/SMS sending is live
+);

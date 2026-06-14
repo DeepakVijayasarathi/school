@@ -30,13 +30,21 @@ public class AuthService(
         if (tenant.PlanStatus == SubscriptionStatus.Expired || tenant.PlanStatus == SubscriptionStatus.Suspended)
             return Result<LoginResponse>.Failure("Subscription expired or suspended", 403);
 
+        if (string.IsNullOrWhiteSpace(request.Email) && string.IsNullOrWhiteSpace(request.Phone))
+            return Result<LoginResponse>.Failure("Email or phone is required", 400);
+
         User? user = null;
-        if (request.Email is not null)
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            var emailLower = request.Email.Trim().ToLower();
             user = await db.Users.Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.TenantId == tenant.Id && u.Email == request.Email, ct);
-        else if (request.Phone is not null)
+                .FirstOrDefaultAsync(u => u.TenantId == tenant.Id && u.Email != null && u.Email.ToLower() == emailLower, ct);
+        }
+        else if (!string.IsNullOrWhiteSpace(request.Phone))
+        {
             user = await db.Users.Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.TenantId == tenant.Id && u.Phone == request.Phone, ct);
+                .FirstOrDefaultAsync(u => u.TenantId == tenant.Id && u.Phone == request.Phone.Trim(), ct);
+        }
 
         if (user is null)
             return Result<LoginResponse>.Failure("Invalid credentials", 401);
@@ -137,18 +145,25 @@ public class AuthService(
         return Result<bool>.Success(true);
     }
 
-    public async Task<Result<bool>> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct = default)
+    public async Task<Result<ForgotPasswordResult>> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct = default)
     {
         var tenant = await db.Tenants.FirstOrDefaultAsync(t => t.Slug == request.TenantSlug, ct);
-        if (tenant is null) return Result<bool>.Success(true); // don't reveal if tenant exists
+        if (tenant is null)
+            return Result<ForgotPasswordResult>.Failure("Invalid school ID", 404);
 
         User? user = null;
-        if (request.Email is not null)
-            user = await db.Users.FirstOrDefaultAsync(u => u.TenantId == tenant.Id && u.Email == request.Email, ct);
-        else if (request.Phone is not null)
-            user = await db.Users.FirstOrDefaultAsync(u => u.TenantId == tenant.Id && u.Phone == request.Phone, ct);
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            var emailLower = request.Email.Trim().ToLower();
+            user = await db.Users.FirstOrDefaultAsync(u => u.TenantId == tenant.Id && u.Email != null && u.Email.ToLower() == emailLower, ct);
+        }
+        else if (!string.IsNullOrWhiteSpace(request.Phone))
+        {
+            user = await db.Users.FirstOrDefaultAsync(u => u.TenantId == tenant.Id && u.Phone == request.Phone.Trim(), ct);
+        }
 
-        if (user is null) return Result<bool>.Success(true);
+        if (user is null)
+            return Result<ForgotPasswordResult>.Failure("No account found with those details", 404);
 
         var otp = GenerateOtp();
         var otpHash = BCrypt.Net.BCrypt.HashPassword(otp);
@@ -158,8 +173,9 @@ public class AuthService(
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
         }, ct);
 
-        // TODO: send OTP via email/SMS based on user preference
-        return Result<bool>.Success(true);
+        var token = jwt.GenerateTempToken(user.Id, "pwd_reset");
+        // TODO: send OTP via email/SMS. For now returned in response.
+        return Result<ForgotPasswordResult>.Success(new ForgotPasswordResult(token, otp));
     }
 
     public async Task<Result<bool>> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken ct = default)
