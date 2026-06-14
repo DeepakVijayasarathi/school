@@ -8,24 +8,25 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import {
-  Users, DollarSign, UserCheck, TrendingUp, TrendingDown,
-  ArrowUpRight, AlertCircle, Activity, Sparkles,
-  GraduationCap,
+  Users, DollarSign, UserCheck, TrendingUp,
+  ArrowUpRight, AlertCircle, Activity, Sparkles, GraduationCap,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { SkeletonMetricCard } from '@/components/ui/SkeletonCard'
 
-// ── Custom tooltip ────────────────────────────────────────────────────────────
+// ── Custom tooltip ─────────────────────────────────────────────
 const ChartTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
-      <p style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>{label}</p>
+    <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px', boxShadow: 'var(--shadow-md)' }}>
+      <p style={{ color: 'var(--text-3)', fontSize: 11, marginBottom: 5 }}>{label}</p>
       {payload.map((p: any, i: number) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, display: 'inline-block' }} />
-          <span style={{ color: '#cbd5e1' }}>{p.name}:</span>
-          <span style={{ color: 'white', fontWeight: 700 }}>{typeof p.value === 'number' && p.value > 1000 ? formatCurrency(p.value) : p.value}</span>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12 }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: p.color, display: 'inline-block' }} />
+          <span style={{ color: 'var(--text-2)' }}>{p.name}:</span>
+          <span style={{ color: 'var(--text-1)', fontWeight: 700 }}>
+            {typeof p.value === 'number' && p.value > 1000 ? formatCurrency(p.value) : p.value}
+          </span>
         </div>
       ))}
     </div>
@@ -39,22 +40,19 @@ function getGreeting() {
   return 'Good evening'
 }
 
-// ── Metric card ───────────────────────────────────────────────────────────────
-function MetricCard({ label, value, sub, trend, trendLabel, gradient, icon: Icon, delay = 0 }: {
+// ── Metric card ────────────────────────────────────────────────
+function MetricCard({ label, value, sub, trend, trendLabel, gradClass, icon: Icon, delay = 0 }: {
   label: string; value: string | number; sub?: string
   trend?: 'up' | 'down'; trendLabel?: string
-  gradient: string; icon: any; delay?: number
+  gradClass: string; icon: any; delay?: number
 }) {
   return (
     <div
-      className={cn('relative rounded-2xl p-5 overflow-hidden text-white cursor-default animate-fade-in-up', gradient)}
-      style={{ animationDelay: `${delay}ms`, boxShadow: '0 8px 28px rgba(0,0,0,0.18)', transition: 'transform 0.2s, box-shadow 0.2s' }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 16px 40px rgba(0,0,0,0.22)' }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(0,0,0,0.18)' }}
+      className={cn('relative rounded-2xl p-5 overflow-hidden text-white cursor-default anim-fade-up card-hover', gradClass)}
+      style={{ animationDelay: `${delay}ms`, boxShadow: '0 8px 24px rgba(0,0,0,.15)' }}
     >
-      {/* Background circles */}
-      <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full bg-white/10 pointer-events-none" />
-      <div className="absolute right-4 bottom-2 w-16 h-16 rounded-full bg-white/5 pointer-events-none" />
+      <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
+      <div className="absolute right-3 bottom-2 w-14 h-14 rounded-full bg-white/5 pointer-events-none" />
 
       <div className="relative">
         <div className="flex items-start justify-between mb-4">
@@ -62,42 +60,57 @@ function MetricCard({ label, value, sub, trend, trendLabel, gradient, icon: Icon
             <Icon className="w-5 h-5 text-white" />
           </div>
           {trendLabel && (
-            <div className="flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-white/15">
-              {trend === 'up' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            <div className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/15">
               {trendLabel}
             </div>
           )}
         </div>
-        <div className="animate-number-pop" style={{ animationDelay: `${delay + 100}ms` }}>
-          <p className="text-3xl font-bold tracking-tight leading-none">{value}</p>
-          <p className="text-sm text-white/70 font-medium mt-1.5">{label}</p>
-          {sub && <p className="text-xs text-white/45 mt-0.5">{sub}</p>}
-        </div>
+        <p className="text-[28px] font-extrabold tracking-tight leading-none">{value}</p>
+        <p className="text-[13px] text-white/75 font-medium mt-1.5">{label}</p>
+        {sub && <p className="text-[11px] text-white/45 mt-0.5">{sub}</p>}
       </div>
     </div>
   )
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Stat row ──────────────────────────────────────────────────
+function StatRow({ icon: Icon, iconBg, title, value, valueStyle }: {
+  icon: any; iconBg: string; title: string; value: any; valueStyle?: React.CSSProperties
+}) {
+  return (
+    <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+        style={{ background: iconBg }}>
+        <Icon className="w-4 h-4" style={{ color: iconBg.replace('1)', '.7)').replace('0.1', '1') }} />
+      </div>
+      <span className="text-[13px] flex-1" style={{ color: 'var(--text-2)' }}>{title}</span>
+      <span className="text-[13px] font-bold" style={valueStyle ?? { color: 'var(--text-1)' }}>{value}</span>
+    </div>
+  )
+}
+
+// ── Page ──────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user } = useAuthStore()
 
   const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: ['report-overview'],
     queryFn: () => reportsApi.getOverview().then(r => r.data),
+    staleTime: 60_000,
   })
 
   const { data: attendanceReport } = useQuery({
     queryKey: ['report-attendance-dash'],
     queryFn: () => reportsApi.getAttendanceReport({ type: 'student' }).then(r => r.data),
+    staleTime: 60_000,
   })
 
   const { data: feeReport } = useQuery({
     queryKey: ['report-fees-dash'],
     queryFn: () => reportsApi.getFeeReport({}).then(r => r.data),
+    staleTime: 60_000,
   })
 
-  // Build 7-day attendance chart data
   const weeklyAttendance = (() => {
     const map: Record<string, any> = {}
     for (const d of attendanceReport?.daily ?? []) {
@@ -113,18 +126,16 @@ export default function DashboardPage() {
       }))
   })()
 
-  // 6-month fee bar chart
   const monthlyFee = (feeReport?.monthlyCollection ?? []).slice(-6).map((d: any) => ({
     month: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.month - 1],
     collected: d.collected,
   }))
 
-  // Donut data
-  const collected   = feeReport?.totalCollected ?? 0
+  const collected   = feeReport?.totalCollected   ?? 0
   const outstanding = feeReport?.totalOutstanding ?? 0
   const feeDonut    = [
-    { name: 'Collected',    value: collected    },
-    { name: 'Outstanding',  value: outstanding  },
+    { name: 'Collected',   value: collected   },
+    { name: 'Outstanding', value: outstanding },
   ]
   const DONUT_COLORS = ['#10b981', '#f43f5e']
 
@@ -135,107 +146,109 @@ export default function DashboardPage() {
 
   const todayStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
+  const METRICS = [
+    { label: 'Total Students',   value: overview?.totalStudents ?? '—',                          sub: 'Across all classes',    trendLabel: '+12%', gradClass: 'grad-violet',  icon: GraduationCap, delay: 0   },
+    { label: 'Fee Collected',    value: formatCurrency(overview?.feeCollectedThisMonth ?? 0),     sub: 'This month',            trendLabel: '+8%',  gradClass: 'grad-emerald', icon: DollarSign,    delay: 75  },
+    { label: 'Present Today',    value: `${todayRate}%`,                                          sub: `${todayPresent} of ${todayTotal}`, trendLabel: `${todayPresent}`, gradClass: 'grad-sky', icon: UserCheck, delay: 150 },
+    { label: 'Outstanding Dues', value: formatCurrency(overview?.totalOutstanding ?? 0),          sub: 'Pending fee dues',      trendLabel: 'Action needed', gradClass: 'grad-rose', icon: AlertCircle, delay: 225 },
+  ]
+
   return (
     <div className="space-y-6 max-w-screen-xl pb-6">
 
-      {/* ── Hero ─────────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 animate-fade-in-up">
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 anim-fade-up">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="w-4 h-4 text-amber-400" style={{ animation: 'float 3s ease-in-out infinite' }} />
-            <span className="text-sm text-gray-400">{todayStr}</span>
+          <div className="flex items-center gap-2 mb-1.5">
+            <Sparkles className="w-3.5 h-3.5 anim-float" style={{ color: '#f59e0b' }} />
+            <span className="text-[12px]" style={{ color: 'var(--text-3)' }}>{todayStr}</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-[28px] font-extrabold tracking-tight leading-tight" style={{ color: 'var(--text-1)' }}>
             {getGreeting()},{' '}
-            <span className="gradient-text">{user?.fullName?.split(' ')[0] ?? 'Admin'}</span>
+            <span className="text-brand-gradient">{user?.fullName?.split(' ')[0] ?? 'Admin'}</span>
           </h1>
-          <p className="text-gray-400 text-sm mt-1">Here's what's happening in your school today.</p>
+          <p className="text-[13px] mt-1" style={{ color: 'var(--text-3)' }}>
+            Here's what's happening in your school today.
+          </p>
         </div>
 
         <div className="flex gap-3">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-3 text-center" style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
-            <p className="text-2xl font-bold text-gray-900">{todayRate}%</p>
-            <p className="text-xs text-gray-400 mt-0.5">Attendance Today</p>
+          <div className="card px-5 py-3 text-center">
+            <p className="text-[22px] font-extrabold leading-none" style={{ color: 'var(--text-1)' }}>{todayRate}%</p>
+            <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>Attendance Today</p>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-3 text-center" style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
-            <p className="text-2xl font-bold text-gray-900">{overview?.totalStudents ?? '—'}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Students Enrolled</p>
+          <div className="card px-5 py-3 text-center">
+            <p className="text-[22px] font-extrabold leading-none" style={{ color: 'var(--text-1)' }}>{overview?.totalStudents ?? '—'}</p>
+            <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>Students Enrolled</p>
           </div>
         </div>
       </div>
 
-      {/* ── Metric cards ─────────────────────────────────────────────────────── */}
+      {/* ── Metric cards ─────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {overviewLoading ? (
-          <>
-            <SkeletonMetricCard />
-            <SkeletonMetricCard />
-            <SkeletonMetricCard />
-            <SkeletonMetricCard />
-          </>
-        ) : (
-          <>
-            <MetricCard label="Total Students"   value={overview?.totalStudents ?? '—'}          sub="Across all classes"     trend="up"   trendLabel="+12%"             gradient="gradient-blue"   icon={GraduationCap} delay={0}   />
-            <MetricCard label="Fee Collected"    value={formatCurrency(overview?.feeCollectedThisMonth ?? 0)} sub="This month" trend="up"   trendLabel="+8%"              gradient="gradient-green"  icon={DollarSign}    delay={75}  />
-            <MetricCard label="Present Today"    value={`${todayRate}%`}                          sub={`${todayPresent} of ${todayTotal} students`} trend={todayRate >= 75 ? 'up' : 'down'} trendLabel={`${todayPresent} present`} gradient="gradient-purple" icon={UserCheck} delay={150} />
-            <MetricCard label="Outstanding Dues" value={formatCurrency(overview?.totalOutstanding ?? 0)}     sub="Pending fee dues"      trend="down" trendLabel="Needs action"        gradient="gradient-rose"   icon={AlertCircle}   delay={225} />
-          </>
-        )}
+        {overviewLoading
+          ? [0,1,2,3].map(i => <SkeletonMetricCard key={i} />)
+          : METRICS.map(m => <MetricCard key={m.label} {...m} />)
+        }
       </div>
 
-      {/* ── Charts row ───────────────────────────────────────────────────────── */}
+      {/* ── Charts row ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
-        {/* Attendance area chart */}
-        <div className="xl:col-span-2 bg-white rounded-2xl border border-gray-100 p-6 animate-fade-in-up delay-200" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-          <div className="flex items-center justify-between mb-6">
+        {/* Attendance area */}
+        <div className="card xl:col-span-2 p-6 anim-fade-up delay-200">
+          <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="font-bold text-gray-900 text-base">Attendance Trend</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Last 7 days breakdown</p>
+              <h2 className="font-bold text-[15px]" style={{ color: 'var(--text-1)' }}>Attendance Trend</h2>
+              <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-3)' }}>Last 7 days breakdown</p>
             </div>
-            <div className="flex items-center gap-4 text-xs text-gray-400">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Present</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-400 inline-block" />Absent</span>
+            <div className="flex items-center gap-3 text-[11px]" style={{ color: 'var(--text-3)' }}>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full inline-block" style={{ background: '#6366f1' }} />Present
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full inline-block" style={{ background: '#f43f5e' }} />Absent
+              </span>
             </div>
           </div>
           {weeklyAttendance.length > 0 ? (
-            <ResponsiveContainer width="100%" height={210}>
+            <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={weeklyAttendance} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
                 <defs>
                   <linearGradient id="gP" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.18} />
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="gA" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#f43f5e" stopOpacity={0.15} />
+                    <stop offset="5%"  stopColor="#f43f5e" stopOpacity={0.12} />
                     <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--text-4)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--text-4)' }} axisLine={false} tickLine={false} />
                 <Tooltip content={<ChartTooltip />} />
-                <Area type="monotone" dataKey="Present" stroke="#3b82f6" strokeWidth={2.5} fill="url(#gP)" name="Present" dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
-                <Area type="monotone" dataKey="Absent"  stroke="#f43f5e" strokeWidth={2}   fill="url(#gA)" name="Absent"  dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
+                <Area type="monotone" dataKey="Present" stroke="#6366f1" strokeWidth={2.5} fill="url(#gP)" name="Present" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                <Area type="monotone" dataKey="Absent"  stroke="#f43f5e" strokeWidth={2}   fill="url(#gA)" name="Absent"  dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[210px] flex flex-col items-center justify-center gap-2 text-gray-300">
-              <Activity className="w-10 h-10" />
-              <p className="text-sm">No attendance data yet</p>
+            <div className="h-[200px] flex flex-col items-center justify-center gap-2" style={{ color: 'var(--text-4)' }}>
+              <Activity className="w-9 h-9" />
+              <p className="text-[13px]">No attendance data yet</p>
             </div>
           )}
         </div>
 
         {/* Fee donut */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 animate-fade-in-up delay-300" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-          <h2 className="font-bold text-gray-900 text-base mb-1">Fee Status</h2>
-          <p className="text-xs text-gray-400 mb-5">Total collection overview</p>
+        <div className="card p-6 anim-fade-up delay-300">
+          <h2 className="font-bold text-[15px]" style={{ color: 'var(--text-1)' }}>Fee Status</h2>
+          <p className="text-[12px] mt-0.5 mb-4" style={{ color: 'var(--text-3)' }}>Total collection overview</p>
 
           <div className="relative">
-            <ResponsiveContainer width="100%" height={150}>
+            <ResponsiveContainer width="100%" height={145}>
               <PieChart>
-                <Pie data={feeDonut} cx="50%" cy="50%" innerRadius={50} outerRadius={68}
+                <Pie data={feeDonut} cx="50%" cy="50%" innerRadius={48} outerRadius={65}
                   dataKey="value" strokeWidth={0} paddingAngle={4}>
                   {feeDonut.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i]} />)}
                 </Pie>
@@ -244,106 +257,96 @@ export default function DashboardPage() {
             </ResponsiveContainer>
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
-                <p className="text-xl font-bold text-gray-900">
+                <p className="text-[20px] font-extrabold" style={{ color: 'var(--text-1)' }}>
                   {collected + outstanding > 0 ? Math.round(collected / (collected + outstanding) * 100) : 0}%
                 </p>
-                <p className="text-xs text-gray-400">paid</p>
+                <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>paid</p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-2.5 mt-5">
+          <div className="space-y-2 mt-4">
             {[
-              { label: 'Collected', value: formatCurrency(collected), color: '#10b981', bg: 'bg-emerald-50 text-emerald-600' },
-              { label: 'Outstanding', value: formatCurrency(outstanding), color: '#f43f5e', bg: 'bg-rose-50 text-rose-600' },
+              { label: 'Collected',    value: formatCurrency(collected),   bg: 'var(--success-bg)', color: 'var(--success)' },
+              { label: 'Outstanding',  value: formatCurrency(outstanding), bg: 'var(--danger-bg)',  color: 'var(--danger)'  },
             ].map(item => (
-              <div key={item.label} className={cn('flex items-center justify-between rounded-xl px-3 py-2', item.bg)}>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.color }} />
-                  <span className="text-xs font-medium">{item.label}</span>
-                </div>
-                <span className="text-xs font-bold">{item.value}</span>
+              <div key={item.label} className="flex items-center justify-between rounded-xl px-3 py-2"
+                style={{ background: item.bg }}>
+                <span className="text-[12px] font-medium" style={{ color: item.color }}>{item.label}</span>
+                <span className="text-[12px] font-bold" style={{ color: item.color }}>{item.value}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ── Bottom row ────────────────────────────────────────────────────────── */}
+      {/* ── Bottom row ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
-        {/* Monthly bar chart */}
-        <div className="xl:col-span-2 bg-white rounded-2xl border border-gray-100 p-6 animate-fade-in-up delay-300" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-          <h2 className="font-bold text-gray-900 text-base mb-1">Monthly Fee Collections</h2>
-          <p className="text-xs text-gray-400 mb-5">Revenue over the last 6 months</p>
+        {/* Monthly bar */}
+        <div className="card xl:col-span-2 p-6 anim-fade-up delay-300">
+          <h2 className="font-bold text-[15px]" style={{ color: 'var(--text-1)' }}>Monthly Fee Collections</h2>
+          <p className="text-[12px] mt-0.5 mb-4" style={{ color: 'var(--text-3)' }}>Revenue over last 6 months</p>
           {monthlyFee.length > 0 ? (
-            <ResponsiveContainer width="100%" height={170}>
-              <BarChart data={monthlyFee} margin={{ top: 4, right: 4, bottom: 0, left: -20 }} barSize={32}>
+            <ResponsiveContainer width="100%" height={165}>
+              <BarChart data={monthlyFee} margin={{ top: 4, right: 4, bottom: 0, left: -20 }} barSize={28}>
                 <defs>
                   <linearGradient id="bG" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%"   stopColor="#6366f1" />
-                    <stop offset="100%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#818cf8" />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-4)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--text-4)' }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
                 <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="collected" fill="url(#bG)" radius={[8, 8, 0, 0]} name="Collected" />
+                <Bar dataKey="collected" fill="url(#bG)" radius={[6, 6, 0, 0]} name="Collected" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[170px] flex items-center justify-center text-gray-300">
-              <p className="text-sm">No fee data yet</p>
+            <div className="h-[165px] flex items-center justify-center" style={{ color: 'var(--text-4)' }}>
+              <p className="text-[13px]">No fee data yet</p>
             </div>
           )}
         </div>
 
-        {/* School stats panel */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 animate-fade-in-up delay-400" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-          <h2 className="font-bold text-gray-900 text-base mb-4">School Overview</h2>
-          <StatRowAlt icon={GraduationCap} bg="bg-blue-50 text-blue-500"    title="Students"   value={overview?.totalStudents ?? '—'} />
-          <StatRowAlt icon={Users}         bg="bg-violet-50 text-violet-500" title="Staff"      value={overview?.totalEmployees ?? '—'} />
-          <StatRowAlt icon={UserCheck}     bg="bg-emerald-50 text-emerald-500" title="Present today" value={`${todayPresent}`} valueColor="text-emerald-600" />
-          <StatRowAlt icon={AlertCircle}   bg="bg-rose-50 text-rose-500"     title="Absent today"   value={`${todayAbsent}`}  valueColor="text-rose-600" />
-          <StatRowAlt icon={DollarSign}    bg="bg-green-50 text-green-500"   title="This month fees" value={formatCurrency(overview?.feeCollectedThisMonth ?? 0)} valueColor="text-green-700" />
+        {/* School overview */}
+        <div className="card p-6 anim-fade-up delay-400">
+          <h2 className="font-bold text-[15px] mb-3" style={{ color: 'var(--text-1)' }}>School Overview</h2>
+          <div className="[&>*:last-child]:border-0">
+            <StatRow icon={GraduationCap} iconBg="rgba(99,102,241,.1)"  title="Students"       value={overview?.totalStudents ?? '—'} />
+            <StatRow icon={Users}         iconBg="rgba(139,92,246,.1)"  title="Staff"           value={overview?.totalEmployees ?? '—'} />
+            <StatRow icon={UserCheck}     iconBg="rgba(16,185,129,.1)"  title="Present today"   value={todayPresent} valueStyle={{ color: 'var(--success)' }} />
+            <StatRow icon={AlertCircle}   iconBg="rgba(239,68,68,.1)"   title="Absent today"    value={todayAbsent}  valueStyle={{ color: 'var(--danger)' }} />
+            <StatRow icon={DollarSign}    iconBg="rgba(22,163,74,.1)"   title="This month fees" value={formatCurrency(overview?.feeCollectedThisMonth ?? 0)} valueStyle={{ color: 'var(--success)' }} />
+          </div>
         </div>
       </div>
 
-      {/* ── Quick actions ─────────────────────────────────────────────────────── */}
-      <div className="animate-fade-in-up delay-400">
-        <p className="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wider">Quick Actions</p>
+      {/* ── Quick actions ─────────────────────────────────────── */}
+      <div className="anim-fade-up delay-400">
+        <p className="text-[11px] font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text-3)' }}>
+          Quick Actions
+        </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Add Student',     href: '/students/new', from: 'from-blue-500',   to: 'to-indigo-600',  icon: GraduationCap },
-            { label: 'Mark Attendance', href: '/attendance',   from: 'from-emerald-500',to: 'to-teal-600',    icon: UserCheck },
-            { label: 'Collect Fee',     href: '/fees',         from: 'from-violet-500', to: 'to-purple-600',  icon: DollarSign },
-            { label: 'View Reports',    href: '/reports',      from: 'from-orange-500', to: 'to-amber-500',   icon: TrendingUp },
+            { label: 'Add Student',     href: '/students/new', gradClass: 'grad-violet',  icon: GraduationCap },
+            { label: 'Mark Attendance', href: '/attendance',   gradClass: 'grad-emerald', icon: UserCheck },
+            { label: 'Collect Fee',     href: '/fees',         gradClass: 'grad-sky',     icon: DollarSign },
+            { label: 'View Reports',    href: '/reports',      gradClass: 'grad-amber',   icon: TrendingUp },
           ].map(a => (
             <a key={a.href} href={a.href}
-              className="group flex items-center gap-3 p-4 bg-white rounded-2xl border border-gray-100 hover:border-blue-100 hover:shadow-md transition-all duration-200 cursor-pointer"
-              style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-              <div className={cn('w-9 h-9 rounded-xl bg-gradient-to-br flex items-center justify-center flex-shrink-0 shadow-sm', a.from, a.to)}>
-                <a.icon className="w-4 h-4 text-white" />
+              className="group flex items-center gap-3 p-4 card card-hover cursor-pointer">
+              <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm text-white', a.gradClass)}>
+                <a.icon className="w-4 h-4" />
               </div>
-              <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 flex-1">{a.label}</span>
-              <ArrowUpRight className="w-3.5 h-3.5 text-gray-200 group-hover:text-blue-400 transition-colors" />
+              <span className="text-[13px] font-semibold flex-1" style={{ color: 'var(--text-1)' }}>{a.label}</span>
+              <ArrowUpRight className="w-3.5 h-3.5 transition-colors group-hover:text-[var(--brand)]"
+                style={{ color: 'var(--text-4)' }} />
             </a>
           ))}
         </div>
       </div>
-    </div>
-  )
-}
-
-function StatRowAlt({ icon: Icon, bg, title, value, valueColor = 'text-gray-900' }: any) {
-  return (
-    <div className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
-      <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', bg)}>
-        <Icon className="w-4 h-4" />
-      </div>
-      <span className="text-sm text-gray-500 flex-1">{title}</span>
-      <span className={cn('text-sm font-bold', valueColor)}>{value}</span>
     </div>
   )
 }
