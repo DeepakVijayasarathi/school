@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { feesApi, studentsApi } from '@/lib/api'
 import { formatCurrency, formatDate, statusColor, cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { DollarSign, AlertCircle, CheckCircle, Search } from 'lucide-react'
+import { DollarSign, AlertCircle, CheckCircle, Search, Loader2 } from 'lucide-react'
 import type { StudentFee } from '@/types'
 
 export default function FeesPage() {
@@ -28,7 +28,7 @@ export default function FeesPage() {
     enabled: !!selectedStudentId,
   })
 
-  const { data: dues } = useQuery({
+  const { data: dues, isLoading: duesLoading } = useQuery({
     queryKey: ['fees-dues'],
     queryFn: () => feesApi.getDues({ daysOverdue: 0 }).then((r) => r.data),
   })
@@ -201,7 +201,9 @@ export default function FeesPage() {
             <h3 className="font-semibold text-gray-800">Fee Dues</h3>
           </div>
           <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
-            {dues?.map((due: any, i: number) => (
+            {duesLoading ? (
+              <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
+            ) : dues?.map((due: any, i: number) => (
               <div
                 key={i}
                 className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer"
@@ -219,7 +221,7 @@ export default function FeesPage() {
                 </div>
               </div>
             ))}
-            {!dues?.length && (
+            {!duesLoading && !dues?.length && (
               <div className="px-5 py-12 text-center text-gray-400 text-sm">No pending dues</div>
             )}
           </div>

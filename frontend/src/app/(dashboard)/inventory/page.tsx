@@ -160,7 +160,8 @@ export default function InventoryPage() {
           {assetsLoading ? (
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
           ) : (
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[700px]">
               <thead className="bg-gray-50">
                 <tr>
                   {['Asset', 'Code', 'Category', 'Location', 'Purchase', 'Condition', 'Assigned To'].map(h => (
@@ -196,6 +197,7 @@ export default function InventoryPage() {
                 )}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
@@ -217,7 +219,8 @@ export default function InventoryPage() {
           {stockLoading ? (
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
           ) : (
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[750px]">
               <thead className="bg-gray-50">
                 <tr>
                   {['Item', 'Category', 'Stock', 'Min Stock', 'Unit Price', 'Stock Value', 'Supplier', 'Actions'].map(h => (
@@ -264,6 +267,7 @@ export default function InventoryPage() {
                 )}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
@@ -389,6 +393,14 @@ export default function InventoryPage() {
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h3 className="text-lg font-semibold mb-4">Add Stock Item</h3>
             <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Category</label>
+                <select value={stockForm.categoryId} onChange={e => setStockForm(p => ({ ...p, categoryId: e.target.value }))}
+                  className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select category (optional)</option>
+                  {assetCategories?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
               {[
                 { label: 'Name', key: 'name', placeholder: 'e.g. A4 Printer Paper' },
                 { label: 'Supplier', key: 'supplier', placeholder: 'Supplier name (optional)' },
