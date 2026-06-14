@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { api as httpClient } from '@/lib/api'
@@ -210,57 +211,80 @@ function CrudTab({ endpoint, columns, createForm, title }: any) {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modal — rendered via portal so fixed positioning isn't clipped by layout transforms */}
       {(showAdd || editItem) && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4"
-          style={{ background: 'rgba(0,0,0,.45)', backdropFilter: 'blur(4px)' }}>
-          <div className="card w-full max-w-md p-6 space-y-4 anim-fade-up"
-            style={{ boxShadow: 'var(--shadow-xl)' }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-[15px]" style={{ color: 'var(--text-1)' }}>
-                  {editItem ? 'Edit' : 'Add'} {title}
-                </h3>
+        <SchoolModal title={`${editItem ? 'Edit' : 'Add'} ${title}`} onClose={closeModal}>
+          <div className="space-y-4">
+            {createForm.map((f: any) => (
+              <div key={f.key}>
+                <label className="text-[12px] font-semibold block mb-1.5" style={{ color: 'var(--text-2)' }}>
+                  {f.label}
+                </label>
+                <FormField
+                  f={f}
+                  value={formData[f.key]}
+                  onChange={v => setFormData((p: any) => ({ ...p, [f.key]: v }))}
+                />
               </div>
-              <button onClick={closeModal}
-                className="btn btn-ghost w-8 h-8 p-0 rounded-lg flex items-center justify-center">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {createForm.map((f: any) => (
-                <div key={f.key}>
-                  <label className="text-[12px] font-semibold block mb-1" style={{ color: 'var(--text-2)' }}>
-                    {f.label}
-                  </label>
-                  <FormField
-                    f={f}
-                    value={formData[f.key]}
-                    onChange={v => setFormData((p: any) => ({ ...p, [f.key]: v }))}
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-2 pt-1">
-              <button onClick={closeModal} className="btn btn-ghost flex-1">Cancel</button>
-              <button
-                onClick={() => editItem
-                  ? updateMutation.mutate({ id: editItem.id, d: formData })
-                  : createMutation.mutate(formData)}
-                disabled={createMutation.isPending || updateMutation.isPending}
-                className="btn btn-primary flex-1 gap-2">
-                {(createMutation.isPending || updateMutation.isPending) && (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                )}
-                {editItem ? 'Update' : 'Create'}
-              </button>
-            </div>
+            ))}
           </div>
-        </div>
+          <div className="flex gap-3 mt-6">
+            <button onClick={closeModal} className="btn btn-ghost flex-1 py-2.5">Cancel</button>
+            <button
+              onClick={() => editItem
+                ? updateMutation.mutate({ id: editItem.id, d: formData })
+                : createMutation.mutate(formData)}
+              disabled={createMutation.isPending || updateMutation.isPending}
+              className="btn btn-primary flex-1 py-2.5 gap-2">
+              {(createMutation.isPending || updateMutation.isPending) && (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              )}
+              {editItem ? 'Update' : 'Create'}
+            </button>
+          </div>
+        </SchoolModal>
       )}
     </div>
+  )
+}
+
+// ── Portal modal — mounts at document.body to escape layout stacking contexts ──
+function SchoolModal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  if (!mounted) return null
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(8px)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        className="w-full max-w-lg rounded-2xl overflow-hidden"
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          boxShadow: '0 25px 60px rgba(0,0,0,.35)',
+          animation: 'fadeUp .18s ease',
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4"
+          style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+          <h3 className="font-bold text-[16px]" style={{ color: 'var(--text-1)' }}>{title}</h3>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-3)' }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5">{children}</div>
+      </div>
+    </div>,
+    document.body
   )
 }
 
