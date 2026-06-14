@@ -164,7 +164,8 @@ export default function LibraryPage() {
           {booksLoading ? (
             <div className="flex items-center justify-center h-48 text-gray-400"><Loader2 className="w-6 h-6 animate-spin" /></div>
           ) : (
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
               <thead className="bg-gray-50">
                 <tr>
                   {['Book', 'Author', 'Category', 'Rack', 'Copies', 'Available', 'Action'].map(h => (
@@ -208,6 +209,7 @@ export default function LibraryPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
 
           {/* Issue panel */}
@@ -255,7 +257,8 @@ export default function LibraryPage() {
           {issuesLoading ? (
             <div className="flex items-center justify-center h-48 text-gray-400"><Loader2 className="w-6 h-6 animate-spin" /></div>
           ) : (
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[580px]">
               <thead className="bg-gray-50">
                 <tr>
                   {['Book', 'Borrower', 'Issue Date', 'Due Date', 'Overdue', 'Fine'].map(h => (
@@ -294,6 +297,7 @@ export default function LibraryPage() {
                 )}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
@@ -374,7 +378,11 @@ export default function LibraryPage() {
       {/* Return tab */}
       {tab === 'return' && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full">
+          {issuesLoading ? (
+            <div className="flex items-center justify-center h-48 text-gray-400"><Loader2 className="w-6 h-6 animate-spin" /></div>
+          ) : (
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[500px]">
             <thead className="bg-gray-50">
               <tr>
                 {['Book', 'Borrower', 'Due Date', 'Overdue', 'Action'].map(h => (
@@ -410,6 +418,8 @@ export default function LibraryPage() {
               )}
             </tbody>
           </table>
+          </div>
+          )}
         </div>
       )}
     </div>

@@ -117,7 +117,7 @@ export default function NewStudentPage() {
     mutation.mutate({
       ...formData,
       primaryGuardian,
-      adissionDate: new Date().toISOString().split('T')[0],
+      admissionDate: new Date().toISOString().split('T')[0],
     })
   }
 

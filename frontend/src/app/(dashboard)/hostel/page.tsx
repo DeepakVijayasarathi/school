@@ -220,7 +220,8 @@ export default function HostelPage() {
           {allocLoading ? (
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
           ) : (
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
               <thead className="bg-gray-50">
                 <tr>
                   {['Student ID', 'Hostel', 'Room', 'Bed', 'Allocated On', 'Fee/Month', 'Action'].map(h => (
@@ -251,6 +252,7 @@ export default function HostelPage() {
                 )}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
@@ -261,7 +263,8 @@ export default function HostelPage() {
           {visitorsLoading ? (
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
           ) : (
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
               <thead className="bg-gray-50">
                 <tr>
                   {['Visitor', 'Phone', 'Relation', 'Purpose', 'Check In', 'ID Proof', 'Action'].map(h => (
@@ -293,6 +296,7 @@ export default function HostelPage() {
                 )}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
