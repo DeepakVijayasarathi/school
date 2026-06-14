@@ -3,12 +3,11 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
+import { visitorApi, api as httpClient } from '@/lib/api'
+import toast from 'react-hot-toast'
 import { Plus, Search, LogIn, LogOut, X, User } from 'lucide-react'
 
 const PURPOSES = ['meeting', 'parent_visit', 'delivery', 'maintenance', 'official', 'interview', 'other']
-
-const api = (path: string, opts?: RequestInit) =>
-  fetch(`/api/visitors${path}`, { headers: { 'Content-Type': 'application/json' }, ...opts }).then(r => r.json())
 
 export default function VisitorManagementPage() {
   const qc = useQueryClient()
@@ -19,25 +18,29 @@ export default function VisitorManagementPage() {
 
   const { data: visitors } = useQuery({
     queryKey: ['visitors', tab, search],
-    queryFn: () => api(`?status=${tab === 'current' ? 'checked_in' : ''}&search=${search}`),
-    refetchInterval: 30000, // refresh every 30 seconds
+    queryFn: () => visitorApi.getVisitors({ status: tab === 'current' ? 'checked_in' : undefined, search: search || undefined }).then(r => r.data),
+    refetchInterval: 30000,
   })
 
   const { data: gatePasses } = useQuery({
     queryKey: ['gate-passes'],
-    queryFn: () => api('/gate-passes?status=pending'),
+    queryFn: () => visitorApi.getGatePasses({ status: 'pending' }).then(r => r.data),
     enabled: tab === 'gate-passes',
   })
 
   const checkOutMutation = useMutation({
-    mutationFn: (id: string) => api(`/${id}/check-out`, { method: 'POST', body: JSON.stringify({}) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['visitors'] })
+    mutationFn: (id: string) => visitorApi.checkOut(id),
+    onSuccess: () => { toast.success('Visitor checked out'); qc.invalidateQueries({ queryKey: ['visitors'] }) },
+    onError: () => toast.error('Failed to check out'),
   })
 
   const gatePassActionMutation = useMutation({
     mutationFn: ({ id, action }: { id: string; action: string }) =>
-      api(`/gate-passes/${id}/action`, { method: 'POST', body: JSON.stringify({ action }) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['gate-passes'] })
+      action === 'approve'
+        ? visitorApi.approveGatePass(id)
+        : httpClient.post(`/visitor/gate-passes/${id}/${action}`),
+    onSuccess: () => { toast.success('Gate pass updated'); qc.invalidateQueries({ queryKey: ['gate-passes'] }) },
+    onError: () => toast.error('Action failed'),
   })
 
   const todayVisitors = visitors?.items ?? []
@@ -228,7 +231,7 @@ function CheckInModal({ onClose, onSaved }: any) {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: any) => api('/check-in', { method: 'POST', body: JSON.stringify(data) }),
+    mutationFn: (data: any) => visitorApi.checkIn(data),
     onSuccess: onSaved,
   })
 
@@ -314,7 +317,7 @@ function GatePassModal({ onClose, onSaved }: any) {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: any) => api('/gate-passes', { method: 'POST', body: JSON.stringify(data) }),
+    mutationFn: (data: any) => visitorApi.createGatePass(data),
     onSuccess: onSaved,
   })
 

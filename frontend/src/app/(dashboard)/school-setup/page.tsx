@@ -3,10 +3,14 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
+import { api as httpClient } from '@/lib/api'
 import { Plus, Edit2, Trash2, Check, X, Settings } from 'lucide-react'
 
-const api = (path: string, opts?: RequestInit) =>
-  fetch(`/api/school-setup${path}`, { headers: { 'Content-Type': 'application/json' }, ...opts }).then(r => r.json())
+const api = (path: string, opts?: { method?: string; body?: string }) => {
+  const method = (opts?.method?.toLowerCase() ?? 'get') as any
+  const data = opts?.body ? JSON.parse(opts.body) : undefined
+  return httpClient({ method, url: `/school-setup${path}`, data }).then((r: any) => r.data)
+}
 
 const TABS = [
   'School Info', 'Academic Years', 'Campus', 'Classes', 'Sections',
@@ -288,8 +292,8 @@ function RolesTab() {
 }
 
 function SubscriptionTab() {
-  const { data } = useQuery({ queryKey: ['subscription'], queryFn: () => fetch('/api/subscription/current').then(r => r.json()) })
-  const { data: plans } = useQuery({ queryKey: ['plans'], queryFn: () => fetch('/api/subscription/plans').then(r => r.json()) })
+  const { data } = useQuery({ queryKey: ['subscription'], queryFn: () => httpClient.get('/subscription/current').then(r => r.data).catch(() => null) })
+  const { data: plans } = useQuery({ queryKey: ['plans'], queryFn: () => httpClient.get('/subscription/plans').then(r => r.data).catch(() => []) })
 
   return (
     <div className="space-y-5">

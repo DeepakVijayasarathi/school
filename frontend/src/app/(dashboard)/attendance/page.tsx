@@ -6,7 +6,7 @@ import { attendanceApi, schoolApi } from '@/lib/api'
 import { formatDate, cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
-import { Save, CheckCircle, XCircle, Clock, Minus } from 'lucide-react'
+import { Save, CheckCircle, XCircle, Clock, Minus, Users, MousePointerClick } from 'lucide-react'
 import type { AttendanceRecord } from '@/types'
 
 const STATUS_OPTIONS = [
@@ -159,63 +159,88 @@ export default function AttendancePage() {
       )}
 
       {/* Attendance list */}
-      {isLoading ? (
-        <div className="bg-white rounded-xl p-8 text-center text-gray-400">Loading...</div>
-      ) : !sectionId ? (
-        <div className="bg-white rounded-xl p-12 text-center text-gray-400">
-          Select a class and section to mark attendance
-        </div>
-      ) : records?.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 text-center text-gray-400">
-          No students found in this section
+      {!sectionId ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center">
+          <MousePointerClick className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-gray-500">Select class and section</p>
+          <p className="text-xs text-gray-400 mt-1">Choose a class and section above to start marking attendance</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-10">#</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Roll No</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {records?.map((student: any, i: number) => (
-                <tr key={student.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm text-gray-400">{i + 1}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm font-medium">
-                        {student.fullName?.[0]}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{student.fullName}</p>
-                        <p className="text-xs text-gray-400">{student.admissionNumber}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{student.rollNumber ?? '-'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      {STATUS_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          onClick={() => setAttendance((prev) => ({ ...prev, [student.id]: opt.value }))}
-                          className={cn(
-                            'w-9 h-9 rounded-lg text-xs font-bold border-2 transition-all',
-                            attendance[student.id] === opt.value ? opt.color : 'border-gray-200 text-gray-400 hover:border-gray-300'
-                          )}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </td>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px]">
+              <thead className="bg-gray-50/70 border-b border-gray-100">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-10">#</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Student</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Roll No</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {isLoading
+                  ? Array.from({ length: 8 }).map((_, i) => (
+                      <tr key={i}>
+                        <td className="px-4 py-3"><div className="skeleton h-3 w-4 rounded" /></td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="skeleton w-8 h-8 rounded-full" />
+                            <div className="space-y-1.5">
+                              <div className="skeleton h-3 w-28 rounded" />
+                              <div className="skeleton h-2.5 w-20 rounded" />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3"><div className="skeleton h-3 w-12 rounded" /></td>
+                        <td className="px-4 py-3"><div className="flex gap-1">{Array.from({ length: 4 }).map((_, j) => <div key={j} className="skeleton w-9 h-9 rounded-lg" />)}</div></td>
+                      </tr>
+                    ))
+                  : records?.length === 0
+                  ? (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-16 text-center">
+                          <Users className="w-10 h-10 text-gray-200 mx-auto mb-2" />
+                          <p className="text-sm text-gray-400">No students found in this section</p>
+                        </td>
+                      </tr>
+                    )
+                  : records?.map((student: any, i: number) => (
+                      <tr key={student.id} className="hover:bg-blue-50/20 transition-colors">
+                        <td className="px-4 py-3 text-sm text-gray-400">{i + 1}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm font-semibold flex-shrink-0">
+                              {student.fullName?.[0]?.toUpperCase() ?? '?'}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{student.fullName}</p>
+                              <p className="text-xs text-gray-400">{student.admissionNumber}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{student.rollNumber ?? '—'}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-1">
+                            {STATUS_OPTIONS.map((opt) => (
+                              <button
+                                key={opt.value}
+                                onClick={() => setAttendance((prev) => ({ ...prev, [student.id]: opt.value }))}
+                                className={cn(
+                                  'w-9 h-9 rounded-lg text-xs font-bold border-2 transition-all',
+                                  attendance[student.id] === opt.value ? opt.color : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                                )}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

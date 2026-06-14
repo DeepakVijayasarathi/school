@@ -142,9 +142,14 @@ export default function CommunicationPage() {
               </div>
             ))
           ) : (
-            <div className="bg-white rounded-xl p-12 text-center text-gray-400">
-              <Bell className="w-12 h-12 mx-auto mb-3 opacity-20" />
-              <p>No announcements yet</p>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+              <Bell className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+              <p className="text-sm font-medium text-gray-500">No announcements yet</p>
+              <p className="text-xs text-gray-400 mt-1">Create your first announcement to notify students and parents</p>
+              <button onClick={() => setShowNew(true)}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 inline-flex items-center gap-2">
+                <Plus className="w-4 h-4" /> Create Announcement
+              </button>
             </div>
           )}
         </div>

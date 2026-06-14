@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
+import { api as httpClient, timetableApi, hrApi } from '@/lib/api'
 import { Plus, Printer, AlertTriangle, ChevronDown, X } from 'lucide-react'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -17,9 +18,6 @@ const SUBJECT_COLORS = [
   'bg-yellow-100 text-yellow-800 border-yellow-200',
 ]
 
-const api = (path: string, options?: RequestInit) =>
-  fetch(`/api${path}`, { headers: { 'Content-Type': 'application/json' }, ...options }).then(r => r.json())
-
 export default function TimetablePage() {
   const qc = useQueryClient()
   const [view, setView] = useState<'section' | 'teacher'>('section')
@@ -31,46 +29,38 @@ export default function TimetablePage() {
 
   const { data: academicYears } = useQuery({
     queryKey: ['academic-years'],
-    queryFn: () => api('/school-setup/academic-years'),
-  })
-
-  const { data: classes } = useQuery({
-    queryKey: ['classes'],
-    queryFn: () => api('/school-setup/classes'),
+    queryFn: () => httpClient.get('/school/academic-years').then(r => r.data),
   })
 
   const { data: sections } = useQuery({
     queryKey: ['sections-all'],
-    queryFn: () => api('/school-setup/sections'),
+    queryFn: () => httpClient.get('/school/sections').then(r => r.data),
   })
 
   const { data: employees } = useQuery({
     queryKey: ['employees'],
-    queryFn: () => api('/hr/employees?pageSize=200'),
+    queryFn: () => hrApi.getEmployees({ pageSize: 200 }).then(r => r.data),
   })
 
   const { data: subjects } = useQuery({
     queryKey: ['subjects'],
-    queryFn: () => api('/school-setup/subjects'),
+    queryFn: () => httpClient.get('/school/subjects').then(r => r.data),
   })
 
   const { data: timetableData, isLoading } = useQuery({
     queryKey: ['timetable', view, selectedSectionId, selectedTeacherId, selectedAcademicYearId],
     queryFn: () => {
       if (view === 'section' && selectedSectionId && selectedAcademicYearId)
-        return api(`/timetable/section/${selectedSectionId}?academicYearId=${selectedAcademicYearId}`)
+        return timetableApi.getSectionTimetable(selectedSectionId, selectedAcademicYearId).then(r => r.data)
       if (view === 'teacher' && selectedTeacherId && selectedAcademicYearId)
-        return api(`/timetable/teacher/${selectedTeacherId}?academicYearId=${selectedAcademicYearId}`)
+        return timetableApi.getTeacherTimetable(selectedTeacherId, selectedAcademicYearId).then(r => r.data)
       return null
     },
     enabled: !!(selectedAcademicYearId && (selectedSectionId || selectedTeacherId)),
   })
 
   const saveMutation = useMutation({
-    mutationFn: (data: any) => api(
-      `/timetable/entries?academicYearId=${selectedAcademicYearId}&classId=${data.classId}`,
-      { method: 'POST', body: JSON.stringify(data) }
-    ),
+    mutationFn: (data: any) => timetableApi.saveEntries(selectedAcademicYearId, data.classId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['timetable'] })
       setModal(null)

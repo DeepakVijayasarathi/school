@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
+import { api as httpClient, schoolApi, timetableApi } from '@/lib/api'
 import { Plus, X, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 
 const EVENT_TYPES = [
@@ -20,9 +21,6 @@ const EVENT_TYPES = [
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
-const api = (path: string, opts?: RequestInit) =>
-  fetch(`/api/timetable/calendar${path}`, { headers: { 'Content-Type': 'application/json' }, ...opts }).then(r => r.json())
-
 export default function AcademicCalendarPage() {
   const qc = useQueryClient()
   const today = new Date()
@@ -35,17 +33,17 @@ export default function AcademicCalendarPage() {
 
   const { data: academicYears } = useQuery({
     queryKey: ['academic-years'],
-    queryFn: () => fetch('/api/school-setup/academic-years').then(r => r.json()),
+    queryFn: () => schoolApi.getAcademicYears().then(r => r.data),
   })
 
   const { data: events = [] } = useQuery({
     queryKey: ['calendar-events', academicYearId, month, year],
-    queryFn: () => api(`?academicYearId=${academicYearId}&month=${month + 1}&year=${year}`),
+    queryFn: () => httpClient.get('/timetable/calendar', { params: { academicYearId, month: month + 1, year } }).then(r => r.data),
     enabled: !!academicYearId,
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api(`/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) => httpClient.delete(`/timetable/calendar/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['calendar-events'] })
   })
 
@@ -236,8 +234,7 @@ function AddEventModal({ academicYearId, defaultDate, onClose, onSaved }: any) {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: any) =>
-      fetch('/api/timetable/calendar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
+    mutationFn: (data: any) => timetableApi.createCalendarEvent(data),
     onSuccess: onSaved,
   })
 

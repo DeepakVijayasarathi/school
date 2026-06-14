@@ -5,6 +5,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { User, Shield, Bell, Palette, Link, CreditCard, Eye, EyeOff, Check } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
+import { api as httpClient, authApi } from '@/lib/api'
 
 const TABS = [
   { key: 'profile',      label: 'Profile',      icon: User },
@@ -76,9 +77,9 @@ function ProfileSettings() {
   const [saved, setSaved] = useState(false)
 
   const save = () => {
-    // Call PUT /api/auth/profile
-    fetch('/api/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+    httpClient.put('/auth/profile', form)
       .then(() => { setSaved(true); setTimeout(() => setSaved(false), 2000) })
+      .catch(() => {})
   }
 
   return (
@@ -126,11 +127,9 @@ function SecuritySettings() {
   const changePassword = () => {
     if (pwd.new !== pwd.confirm) { setMsg('Passwords do not match.'); return }
     if (pwd.new.length < 8) { setMsg('Password must be at least 8 characters.'); return }
-    fetch('/api/auth/change-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currentPassword: pwd.current, newPassword: pwd.new })
-    }).then(r => r.ok ? setMsg('Password changed successfully!') : setMsg('Current password is incorrect.'))
+    authApi.changePassword({ currentPassword: pwd.current, newPassword: pwd.new })
+      .then(() => setMsg('Password changed successfully!'))
+      .catch(() => setMsg('Current password is incorrect.'))
   }
 
   return (
@@ -394,7 +393,7 @@ function IntegrationSettings() {
 function BillingSettings() {
   const { data } = useQuery({
     queryKey: ['billing'],
-    queryFn: () => fetch('/api/subscription/invoices').then(r => r.json()).catch(() => []),
+    queryFn: () => httpClient.get('/subscription/invoices').then(r => r.data).catch(() => []),
   })
 
   return (
