@@ -4,53 +4,62 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { api as httpClient } from '@/lib/api'
-import { Plus, Edit2, Trash2, Check, X, Settings } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Loader2 } from 'lucide-react'
 
 const api = (path: string, opts?: { method?: string; body?: string }) => {
   const method = (opts?.method?.toLowerCase() ?? 'get') as any
-  const data = opts?.body ? JSON.parse(opts.body) : undefined
+  const data   = opts?.body ? JSON.parse(opts.body) : undefined
   return httpClient({ method, url: `/school${path}`, data }).then((r: any) => r.data)
 }
 
 const TABS = [
   'School Info', 'Academic Years', 'Campus', 'Classes', 'Sections',
-  'Subjects', 'Departments', 'Fee Config', 'Roles & Permissions', 'Subscription'
+  'Subjects', 'Departments', 'Fee Config', 'Roles & Permissions', 'Subscription',
 ]
 
 export default function SchoolSetupPage() {
   const [tab, setTab] = useState('School Info')
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 anim-fade-up">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">School Setup</h1>
-        <p className="text-gray-500 text-sm">Configure all aspects of your school</p>
+        <h1 className="text-[22px] font-extrabold tracking-tight" style={{ color: 'var(--text-1)' }}>
+          School Setup
+        </h1>
+        <p className="text-[13px] mt-0.5" style={{ color: 'var(--text-3)' }}>
+          Configure all aspects of your school
+        </p>
       </div>
 
-      <div className="flex overflow-x-auto gap-1 bg-white rounded-xl shadow-sm border border-gray-100 p-1.5">
+      {/* Tab strip */}
+      <div className="flex overflow-x-auto gap-1 rounded-xl p-1.5"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={cn('px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
-              tab === t ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50')}>
+            className="px-3 py-2 rounded-lg text-[13px] font-medium whitespace-nowrap transition-colors"
+            style={tab === t
+              ? { background: 'var(--brand)', color: '#fff' }
+              : { color: 'var(--text-3)', background: 'transparent' }}>
             {t}
           </button>
         ))}
       </div>
 
-      {tab === 'School Info' && <SchoolInfoTab />}
-      {tab === 'Academic Years' && <AcademicYearsTab />}
-      {tab === 'Campus' && <CampusTab />}
-      {tab === 'Classes' && <ClassesTab />}
-      {tab === 'Sections' && <SectionsTab />}
-      {tab === 'Subjects' && <SubjectsTab />}
-      {tab === 'Departments' && <DepartmentsTab />}
-      {tab === 'Fee Config' && <FeeConfigTab />}
-      {tab === 'Roles & Permissions' && <RolesTab />}
-      {tab === 'Subscription' && <SubscriptionTab />}
+      {tab === 'School Info'        && <SchoolInfoTab />}
+      {tab === 'Academic Years'     && <AcademicYearsTab />}
+      {tab === 'Campus'             && <CampusTab />}
+      {tab === 'Classes'            && <ClassesTab />}
+      {tab === 'Sections'           && <SectionsTab />}
+      {tab === 'Subjects'           && <SubjectsTab />}
+      {tab === 'Departments'        && <DepartmentsTab />}
+      {tab === 'Fee Config'         && <FeeConfigTab />}
+      {tab === 'Roles & Permissions'&& <RolesTab />}
+      {tab === 'Subscription'       && <SubscriptionTab />}
     </div>
   )
 }
 
+// ── School Info ────────────────────────────────────────────────────────────────
 function SchoolInfoTab() {
   const { data } = useQuery({ queryKey: ['school-info'], queryFn: () => api('/info') })
   const qc = useQueryClient()
@@ -59,66 +68,59 @@ function SchoolInfoTab() {
 
   const save = useMutation({
     mutationFn: (d: any) => api('/info', { method: 'PUT', body: JSON.stringify(d) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['school-info'] }); setEdit(false) }
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['school-info'] }); setEdit(false) },
   })
 
   const info = data ?? {}
-  const f = (k: string, label: string, type = 'text') => (
-    <div>
-      <label className="text-sm font-medium text-gray-700">{label}</label>
-      {edit ? (
-        <input type={type} value={form[k] ?? info[k] ?? ''} onChange={e => setForm((p: any) => ({ ...p, [k]: e.target.value }))}
-          className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-      ) : (
-        <p className="mt-1 text-sm text-gray-900">{info[k] || '—'}</p>
-      )}
+  const field = (k: string, label: string, type = 'text') => (
+    <div key={k}>
+      <label className="text-[12px] font-semibold block mb-1" style={{ color: 'var(--text-2)' }}>{label}</label>
+      {edit
+        ? <input type={type} value={form[k] ?? info[k] ?? ''}
+            onChange={e => setForm((p: any) => ({ ...p, [k]: e.target.value }))}
+            className="input-base focus-ring w-full" />
+        : <p className="text-[13px]" style={{ color: 'var(--text-1)' }}>{info[k] || '—'}</p>}
     </div>
   )
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
+    <div className="card p-6 space-y-5">
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold">School Information</h3>
+        <h3 className="font-bold text-[15px]" style={{ color: 'var(--text-1)' }}>School Information</h3>
         {edit ? (
           <div className="flex gap-2">
-            <button onClick={() => setEdit(false)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm">Cancel</button>
-            <button onClick={() => save.mutate({ ...info, ...form })}
-              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm">Save</button>
+            <button onClick={() => setEdit(false)} className="btn btn-ghost text-[13px]">Cancel</button>
+            <button onClick={() => save.mutate({ ...info, ...form })} className="btn btn-primary text-[13px]">Save</button>
           </div>
         ) : (
-          <button onClick={() => setEdit(true)} className="flex items-center gap-1 text-sm text-blue-600"><Edit2 className="w-4 h-4" /> Edit</button>
+          <button onClick={() => setEdit(true)} className="btn btn-ghost gap-1 text-[13px]" style={{ color: 'var(--brand)' }}>
+            <Edit2 className="w-3.5 h-3.5" /> Edit
+          </button>
         )}
       </div>
 
-      {edit && (
-        <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center text-sm text-gray-400">
-          School Logo — Drag & drop or click to upload
-        </div>
-      )}
-
       <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-        {f('name', 'School Name')}
-        {f('code', 'School Code')}
-        {f('email', 'Email', 'email')}
-        {f('phone', 'Phone', 'tel')}
-        {f('website', 'Website', 'url')}
-        {f('registrationNumber', 'Registration Number')}
-        {f('affiliation', 'Board / Affiliation')}
-        {f('medium', 'Medium of Instruction')}
-        {f('foundedYear', 'Founded Year', 'number')}
-        {f('motto', 'School Motto')}
-        {f('address', 'Address')}
-        {f('city', 'City')}
-        {f('state', 'State')}
-        {f('pincode', 'Pincode')}
+        {field('name', 'School Name')}
+        {field('email', 'Email', 'email')}
+        {field('phone', 'Phone', 'tel')}
+        {field('website', 'Website', 'url')}
+        {field('address', 'Address')}
+        {field('city', 'City')}
+        {field('state', 'State')}
+        {field('pincode', 'Pincode')}
+        {field('country', 'Country')}
+        {field('timezone', 'Timezone')}
+        {field('locale', 'Locale')}
+        {field('currency', 'Currency')}
       </div>
     </div>
   )
 }
 
+// ── Generic CRUD table ─────────────────────────────────────────────────────────
 function CrudTab({ endpoint, columns, createForm, title }: any) {
   const qc = useQueryClient()
-  const [showAdd, setShowAdd] = useState(false)
+  const [showAdd,  setShowAdd]  = useState(false)
   const [editItem, setEditItem] = useState<any>(null)
   const [formData, setFormData] = useState<any>({})
 
@@ -129,54 +131,77 @@ function CrudTab({ endpoint, columns, createForm, title }: any) {
 
   const createMutation = useMutation({
     mutationFn: (d: any) => api(`/${endpoint}`, { method: 'POST', body: JSON.stringify(d) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: [endpoint] }); setShowAdd(false); setFormData({}) }
+    onSuccess: () => { qc.invalidateQueries({ queryKey: [endpoint] }); setShowAdd(false); setFormData({}) },
   })
 
   const updateMutation = useMutation({
     mutationFn: ({ id, d }: any) => api(`/${endpoint}/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: [endpoint] }); setEditItem(null); setFormData({}) }
+    onSuccess: () => { qc.invalidateQueries({ queryKey: [endpoint] }); setEditItem(null); setFormData({}) },
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api(`/${endpoint}/${id}`, { method: 'DELETE' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [endpoint] })
+    onSuccess: () => qc.invalidateQueries({ queryKey: [endpoint] }),
   })
 
   const items = Array.isArray(data) ? data : data?.items ?? []
 
+  const openEdit = (item: any) => { setEditItem(item); setFormData({ ...item }) }
+  const closeModal = () => { setShowAdd(false); setEditItem(null); setFormData({}) }
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <h3 className="font-semibold">{title}</h3>
-        <button onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm">
+    <div className="card overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-3.5"
+        style={{ borderBottom: '1px solid var(--border)' }}>
+        <h3 className="font-bold text-[14px]" style={{ color: 'var(--text-1)' }}>{title}</h3>
+        <button onClick={() => setShowAdd(true)} className="btn btn-primary gap-1.5 text-[13px]">
           <Plus className="w-4 h-4" /> Add
         </button>
       </div>
 
+      {/* Table */}
       {isLoading ? (
-        <div className="p-8 text-center text-gray-400">Loading...</div>
+        <div className="flex items-center justify-center py-12 gap-2" style={{ color: 'var(--text-4)' }}>
+          <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+        </div>
+      ) : items.length === 0 ? (
+        <div className="py-12 text-center text-[13px]" style={{ color: 'var(--text-4)' }}>
+          No {title.toLowerCase()} yet. Click Add to create one.
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[480px]">
-            <thead className="bg-gray-50 border-b">
+            <thead style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border)' }}>
               <tr>
-                {columns.map((c: any) => <th key={c.key} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{c.label}</th>)}
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                {columns.map((c: any) => (
+                  <th key={c.key} className="table-header text-left">{c.label}</th>
+                ))}
+                <th className="table-header text-left">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody>
               {items.map((item: any) => (
-                <tr key={item.id} className="hover:bg-gray-50">
+                <tr key={item.id} className="table-row-hover transition-colors"
+                  style={{ borderBottom: '1px solid var(--border)' }}>
                   {columns.map((c: any) => (
-                    <td key={c.key} className="px-4 py-3 text-sm">{item[c.key] ?? '—'}</td>
+                    <td key={c.key} className="table-cell text-[13px]" style={{ color: 'var(--text-1)' }}>
+                      {c.render ? c.render(item[c.key]) : (item[c.key] ?? '—')}
+                    </td>
                   ))}
-                  <td className="px-4 py-3 flex gap-2">
-                    <button onClick={() => { setEditItem(item); setFormData(item) }}
-                      className="text-blue-600 hover:text-blue-700"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => deleteMutation.mutate(item.id)} className="text-red-400 hover:text-red-600">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  <td className="table-cell">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => openEdit(item)}
+                        className="btn btn-ghost w-7 h-7 p-0 rounded-lg flex items-center justify-center"
+                        style={{ color: 'var(--brand)' }}>
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => deleteMutation.mutate(item.id)}
+                        className="btn btn-ghost w-7 h-7 p-0 rounded-lg flex items-center justify-center"
+                        style={{ color: 'var(--danger)' }}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -185,31 +210,50 @@ function CrudTab({ endpoint, columns, createForm, title }: any) {
         </div>
       )}
 
+      {/* Modal */}
       {(showAdd || editItem) && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ background: 'rgba(0,0,0,.45)', backdropFilter: 'blur(4px)' }}>
+          <div className="card w-full max-w-md p-6 space-y-4 anim-fade-up"
+            style={{ boxShadow: 'var(--shadow-xl)' }}>
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold">{editItem ? 'Edit' : 'Add'} {title}</h3>
-              <button onClick={() => { setShowAdd(false); setEditItem(null); setFormData({}) }}>
-                <X className="w-5 h-5" />
+              <div>
+                <h3 className="font-bold text-[15px]" style={{ color: 'var(--text-1)' }}>
+                  {editItem ? 'Edit' : 'Add'} {title}
+                </h3>
+              </div>
+              <button onClick={closeModal}
+                className="btn btn-ghost w-8 h-8 p-0 rounded-lg flex items-center justify-center">
+                <X className="w-4 h-4" />
               </button>
             </div>
+
             <div className="space-y-3">
               {createForm.map((f: any) => (
                 <div key={f.key}>
-                  <label className="text-sm font-medium text-gray-700">{f.label}</label>
-                  <input type={f.type ?? 'text'}
-                    value={formData[f.key] ?? ''}
-                    onChange={e => setFormData((p: any) => ({ ...p, [f.key]: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                  <label className="text-[12px] font-semibold block mb-1" style={{ color: 'var(--text-2)' }}>
+                    {f.label}
+                  </label>
+                  <FormField
+                    f={f}
+                    value={formData[f.key]}
+                    onChange={v => setFormData((p: any) => ({ ...p, [f.key]: v }))}
+                  />
                 </div>
               ))}
             </div>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => { setShowAdd(false); setEditItem(null) }} className="px-4 py-2 border border-gray-200 rounded-lg text-sm">Cancel</button>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={closeModal} className="btn btn-ghost flex-1">Cancel</button>
               <button
-                onClick={() => editItem ? updateMutation.mutate({ id: editItem.id, d: formData }) : createMutation.mutate(formData)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">
+                onClick={() => editItem
+                  ? updateMutation.mutate({ id: editItem.id, d: formData })
+                  : createMutation.mutate(formData)}
+                disabled={createMutation.isPending || updateMutation.isPending}
+                className="btn btn-primary flex-1 gap-2">
+                {(createMutation.isPending || updateMutation.isPending) && (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                )}
                 {editItem ? 'Update' : 'Create'}
               </button>
             </div>
@@ -220,72 +264,223 @@ function CrudTab({ endpoint, columns, createForm, title }: any) {
   )
 }
 
+// ── Form field — handles text/number/date inputs, API-loaded selects, static selects
+function FormField({ f, value, onChange }: { f: any; value: any; onChange: (v: string) => void }) {
+  // API-loaded dropdown
+  const { data: options } = useQuery({
+    queryKey: ['select-opts', f.optionsEndpoint],
+    queryFn:  () => api(`/${f.optionsEndpoint}`),
+    enabled:  f.type === 'select' && !!f.optionsEndpoint,
+    staleTime: 60_000,
+  })
+
+  if (f.type === 'select') {
+    // Static options list (no API call needed)
+    const staticOpts: { value: string; label: string }[] | undefined = f.options
+    const apiOpts = staticOpts
+      ? staticOpts
+      : (Array.isArray(options) ? options : (options as any)?.items ?? []).map((o: any) => ({
+          value: o[f.optionValue ?? 'id'],
+          label: o[f.optionLabel ?? 'name'],
+        }))
+
+    return (
+      <select value={value ?? ''} onChange={e => onChange(e.target.value)}
+        className="input-base focus-ring w-full"
+        style={{ background: 'var(--bg)' }}>
+        <option value="">— Select {f.label} —</option>
+        {apiOpts.map((o: any) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    )
+  }
+
+  if (f.type === 'textarea') {
+    return (
+      <textarea value={value ?? ''} onChange={e => onChange(e.target.value)}
+        rows={f.rows ?? 2} placeholder={f.placeholder ?? ''}
+        className="input-base focus-ring w-full resize-none" />
+    )
+  }
+
+  return (
+    <input type={f.type ?? 'text'} value={value ?? ''}
+      onChange={e => onChange(e.target.value)}
+      placeholder={f.placeholder ?? ''}
+      className="input-base focus-ring w-full" />
+  )
+}
+
+// ── Tab definitions ────────────────────────────────────────────────────────────
+
 function AcademicYearsTab() {
   return <CrudTab title="Academic Years" endpoint="academic-years"
-    columns={[{ key: 'name', label: 'Name' }, { key: 'startDate', label: 'Start' }, { key: 'endDate', label: 'End' }, { key: 'isCurrent', label: 'Current' }]}
-    createForm={[{ key: 'name', label: 'Name (e.g. 2024-25)' }, { key: 'startDate', label: 'Start Date', type: 'date' }, { key: 'endDate', label: 'End Date', type: 'date' }]} />
+    columns={[
+      { key: 'name',      label: 'Name' },
+      { key: 'startDate', label: 'Start Date' },
+      { key: 'endDate',   label: 'End Date' },
+      { key: 'isCurrent', label: 'Current', render: (v: any) => v ? '✓ Yes' : 'No' },
+    ]}
+    createForm={[
+      { key: 'name',      label: 'Name (e.g. 2024-25)',  placeholder: '2024-25' },
+      { key: 'startDate', label: 'Start Date', type: 'date' },
+      { key: 'endDate',   label: 'End Date',   type: 'date' },
+    ]} />
 }
 
 function CampusTab() {
   return <CrudTab title="Campus" endpoint="campuses"
-    columns={[{ key: 'name', label: 'Name' }, { key: 'code', label: 'Code' }, { key: 'address', label: 'Address' }]}
-    createForm={[{ key: 'name', label: 'Campus Name' }, { key: 'code', label: 'Code' }, { key: 'address', label: 'Address' }, { key: 'phone', label: 'Phone' }]} />
+    columns={[
+      { key: 'name',    label: 'Name' },
+      { key: 'code',    label: 'Code' },
+      { key: 'city',    label: 'City' },
+      { key: 'address', label: 'Address' },
+    ]}
+    createForm={[
+      { key: 'name',    label: 'Campus Name', placeholder: 'Main Campus' },
+      { key: 'code',    label: 'Code',        placeholder: 'MAIN' },
+      { key: 'city',    label: 'City' },
+      { key: 'state',   label: 'State' },
+      { key: 'address', label: 'Address' },
+      { key: 'phone',   label: 'Phone', type: 'tel' },
+    ]} />
 }
 
 function ClassesTab() {
   return <CrudTab title="Classes" endpoint="classes"
-    columns={[{ key: 'name', label: 'Name' }, { key: 'numericLevel', label: 'Order' }]}
-    createForm={[{ key: 'name', label: 'Class Name (e.g. Class 1)' }, { key: 'numericLevel', label: 'Display Order', type: 'number' }]} />
+    columns={[
+      { key: 'name',         label: 'Class Name' },
+      { key: 'campusName',   label: 'Campus' },
+      { key: 'numericLevel', label: 'Order' },
+    ]}
+    createForm={[
+      { key: 'campusId',     label: 'Campus', type: 'select',
+        optionsEndpoint: 'campuses', optionLabel: 'name', optionValue: 'id' },
+      { key: 'name',         label: 'Class Name', placeholder: 'Class 1' },
+      { key: 'numericLevel', label: 'Display Order', type: 'number' },
+    ]} />
 }
 
 function SectionsTab() {
   return <CrudTab title="Sections" endpoint="sections"
-    columns={[{ key: 'name', label: 'Name' }, { key: 'className', label: 'Class' }, { key: 'maxStrength', label: 'Capacity' }]}
-    createForm={[{ key: 'classId', label: 'Class ID' }, { key: 'academicYearId', label: 'Academic Year ID' }, { key: 'name', label: 'Section Name (e.g. A)' }, { key: 'maxStrength', label: 'Capacity', type: 'number' }]} />
+    columns={[
+      { key: 'name',        label: 'Section' },
+      { key: 'className',   label: 'Class' },
+      { key: 'academicYear',label: 'Academic Year' },
+      { key: 'maxStrength', label: 'Capacity' },
+    ]}
+    createForm={[
+      { key: 'classId', label: 'Class', type: 'select',
+        optionsEndpoint: 'classes', optionLabel: 'name', optionValue: 'id' },
+      { key: 'academicYearId', label: 'Academic Year', type: 'select',
+        optionsEndpoint: 'academic-years', optionLabel: 'name', optionValue: 'id' },
+      { key: 'name',        label: 'Section Name', placeholder: 'A' },
+      { key: 'maxStrength', label: 'Capacity',     type: 'number', placeholder: '40' },
+    ]} />
 }
 
 function SubjectsTab() {
   return <CrudTab title="Subjects" endpoint="subjects"
-    columns={[{ key: 'name', label: 'Name' }, { key: 'code', label: 'Code' }, { key: 'type', label: 'Type' }]}
-    createForm={[{ key: 'name', label: 'Subject Name' }, { key: 'code', label: 'Code' }, { key: 'type', label: 'Type (theory/practical)' }]} />
+    columns={[
+      { key: 'name', label: 'Name' },
+      { key: 'code', label: 'Code' },
+      { key: 'type', label: 'Type' },
+      { key: 'departmentName', label: 'Department' },
+    ]}
+    createForm={[
+      { key: 'name', label: 'Subject Name', placeholder: 'Mathematics' },
+      { key: 'code', label: 'Subject Code', placeholder: 'MATH101' },
+      { key: 'type', label: 'Type', type: 'select', options: [
+          { value: 'theory',     label: 'Theory' },
+          { value: 'practical',  label: 'Practical' },
+          { value: 'both',       label: 'Theory & Practical' },
+        ],
+      },
+      { key: 'departmentId', label: 'Department (optional)', type: 'select',
+        optionsEndpoint: 'departments', optionLabel: 'name', optionValue: 'id' },
+    ]} />
 }
 
 function DepartmentsTab() {
   return <CrudTab title="Departments" endpoint="departments"
-    columns={[{ key: 'name', label: 'Name' }, { key: 'code', label: 'Code' }, { key: 'headName', label: 'Head' }]}
-    createForm={[{ key: 'name', label: 'Department Name' }, { key: 'code', label: 'Code' }]} />
+    columns={[
+      { key: 'name',     label: 'Name' },
+      { key: 'code',     label: 'Code' },
+      { key: 'headName', label: 'Head' },
+    ]}
+    createForm={[
+      { key: 'name', label: 'Department Name', placeholder: 'Science' },
+      { key: 'code', label: 'Code',            placeholder: 'SCI' },
+    ]} />
 }
 
 function FeeConfigTab() {
   return <CrudTab title="Fee Types" endpoint="fee-types"
-    columns={[{ key: 'name', label: 'Name' }, { key: 'amount', label: 'Default Amount' }, { key: 'frequency', label: 'Frequency' }]}
-    createForm={[{ key: 'name', label: 'Fee Name' }, { key: 'amount', label: 'Amount', type: 'number' }, { key: 'frequency', label: 'Frequency (monthly/quarterly/annual)' }]} />
+    columns={[
+      { key: 'name',      label: 'Fee Name' },
+      { key: 'amount',    label: 'Default Amount' },
+      { key: 'frequency', label: 'Frequency' },
+      { key: 'category',  label: 'Category' },
+    ]}
+    createForm={[
+      { key: 'name',   label: 'Fee Name', placeholder: 'Tuition Fee' },
+      { key: 'amount', label: 'Amount (₹)', type: 'number', placeholder: '5000' },
+      { key: 'frequency', label: 'Frequency', type: 'select', options: [
+          { value: 'monthly',   label: 'Monthly' },
+          { value: 'quarterly', label: 'Quarterly' },
+          { value: 'annual',    label: 'Annual' },
+          { value: 'one_time',  label: 'One Time' },
+        ],
+      },
+      { key: 'category', label: 'Category', type: 'select', options: [
+          { value: 'tuition',   label: 'Tuition' },
+          { value: 'transport', label: 'Transport' },
+          { value: 'hostel',    label: 'Hostel' },
+          { value: 'exam',      label: 'Exam' },
+          { value: 'activity',  label: 'Activity' },
+          { value: 'other',     label: 'Other' },
+        ],
+      },
+      { key: 'description', label: 'Description (optional)', type: 'textarea' },
+    ]} />
 }
 
+// ── Roles & Permissions ────────────────────────────────────────────────────────
 function RolesTab() {
   const { data } = useQuery({ queryKey: ['roles'], queryFn: () => api('/roles') })
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="px-4 py-3 border-b flex items-center justify-between">
-        <h3 className="font-semibold">Roles & Permissions</h3>
-        <button className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm"><Plus className="w-4 h-4" /> Add Role</button>
+    <div className="card overflow-hidden">
+      <div className="px-5 py-3.5 flex items-center justify-between"
+        style={{ borderBottom: '1px solid var(--border)' }}>
+        <h3 className="font-bold text-[14px]" style={{ color: 'var(--text-1)' }}>Roles & Permissions</h3>
+        <button className="btn btn-primary gap-1 text-[13px]">
+          <Plus className="w-4 h-4" /> Add Role
+        </button>
       </div>
-      <div className="divide-y">
+      <div>
         {(Array.isArray(data) ? data : data?.items ?? []).map((role: any) => (
-          <div key={role.id} className="px-4 py-4 flex items-center justify-between hover:bg-gray-50">
+          <div key={role.id} className="px-5 py-4 flex items-center justify-between table-row-hover transition-colors"
+            style={{ borderBottom: '1px solid var(--border)' }}>
             <div>
-              <p className="font-medium text-sm">{role.name}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{role.description}</p>
+              <p className="font-semibold text-[13px]" style={{ color: 'var(--text-1)' }}>{role.name}</p>
+              {role.description && (
+                <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-4)' }}>{role.description}</p>
+              )}
               <div className="flex flex-wrap gap-1 mt-2">
-                {(role.permissions ?? []).slice(0, 5).map((p: string) => (
-                  <span key={p} className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{p}</span>
+                {(role.permissions ?? []).slice(0, 6).map((p: string) => (
+                  <span key={p} className="badge badge-draft text-[10px]">{p}</span>
                 ))}
-                {(role.permissions ?? []).length > 5 && (
-                  <span className="text-xs text-gray-400">+{role.permissions.length - 5} more</span>
+                {(role.permissions ?? []).length > 6 && (
+                  <span className="text-[11px]" style={{ color: 'var(--text-4)' }}>
+                    +{role.permissions.length - 6} more
+                  </span>
                 )}
               </div>
             </div>
-            <button className="text-blue-600 text-sm hover:underline">Edit Permissions</button>
+            <button className="btn btn-ghost text-[12px]" style={{ color: 'var(--brand)' }}>
+              Edit Permissions
+            </button>
           </div>
         ))}
       </div>
@@ -293,41 +488,51 @@ function RolesTab() {
   )
 }
 
+// ── Subscription ───────────────────────────────────────────────────────────────
 function SubscriptionTab() {
-  const { data } = useQuery({ queryKey: ['subscription'], queryFn: () => httpClient.get('/subscription/current').then(r => r.data).catch(() => null) })
-  const { data: plans } = useQuery({ queryKey: ['plans'], queryFn: () => httpClient.get('/subscription/plans').then(r => r.data).catch(() => []) })
+  const { data }  = useQuery({ queryKey: ['subscription'], queryFn: () => httpClient.get('/subscription/current').then(r => r.data).catch(() => null) })
+  const { data: plans } = useQuery({ queryKey: ['plans'],    queryFn: () => httpClient.get('/subscription/plans').then(r => r.data).catch(() => []) })
 
   return (
     <div className="space-y-5">
       {data && (
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-5 text-white">
-          <p className="text-sm opacity-80">Current Plan</p>
+        <div className="rounded-2xl p-5 text-white"
+          style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)', boxShadow: '0 4px 24px rgba(99,102,241,.3)' }}>
+          <p className="text-[12px] opacity-80">Current Plan</p>
           <p className="text-3xl font-bold mt-1">{data.planName}</p>
-          <div className="flex gap-6 mt-3 text-sm opacity-90">
-            <span>Students: {data.studentCount} / {data.maxStudents ?? 'Unlimited'}</span>
-            <span>Employees: {data.employeeCount} / {data.maxEmployees ?? 'Unlimited'}</span>
+          <div className="flex flex-wrap gap-6 mt-3 text-[13px] opacity-90">
+            <span>Students: {data.studentCount} / {data.maxStudents ?? '∞'}</span>
+            <span>Staff: {data.employeeCount} / {data.maxEmployees ?? '∞'}</span>
             <span>Storage: {data.storageUsedGb} GB / {data.storageGb} GB</span>
           </div>
-          <p className="mt-2 text-sm opacity-70">Valid until: {data.endDate ? new Date(data.endDate).toLocaleDateString() : 'No expiry'}</p>
+          <p className="mt-2 text-[12px] opacity-70">
+            Valid until: {data.endDate ? new Date(data.endDate).toLocaleDateString() : 'No expiry'}
+          </p>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {(plans ?? []).map((plan: any) => (
-          <div key={plan.id} className={cn('bg-white rounded-xl border p-5 space-y-3',
-            data?.planCode === plan.code ? 'border-blue-500 shadow-md' : 'border-gray-100')}>
+          <div key={plan.id} className="card p-5 space-y-3"
+            style={data?.planCode === plan.code
+              ? { border: '2px solid var(--brand)', boxShadow: '0 0 0 4px var(--brand-bg)' }
+              : {}}>
             {data?.planCode === plan.code && (
-              <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Current</span>
+              <span className="badge badge-active text-[11px]">Current</span>
             )}
-            <h3 className="font-bold text-gray-900">{plan.name}</h3>
-            <p className="text-2xl font-bold">₹{plan.priceMonthly?.toLocaleString()}<span className="text-sm font-normal text-gray-500">/mo</span></p>
-            <ul className="space-y-1 text-xs text-gray-600">
-              {plan.maxStudents && <li>Up to {plan.maxStudents.toLocaleString()} students</li>}
+            <h3 className="font-bold text-[14px]" style={{ color: 'var(--text-1)' }}>{plan.name}</h3>
+            <p className="text-2xl font-bold" style={{ color: 'var(--text-1)' }}>
+              ₹{plan.priceMonthly?.toLocaleString()}
+              <span className="text-[13px] font-normal" style={{ color: 'var(--text-3)' }}>/mo</span>
+            </p>
+            <ul className="space-y-1 text-[12px]" style={{ color: 'var(--text-3)' }}>
+              {plan.maxStudents  && <li>Up to {plan.maxStudents.toLocaleString()} students</li>}
               {plan.maxEmployees && <li>Up to {plan.maxEmployees} staff</li>}
               <li>{plan.storageGb} GB storage</li>
             </ul>
             {data?.planCode !== plan.code && (
-              <button className="w-full py-2 border border-blue-500 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-50">
+              <button className="w-full btn text-[13px] py-2"
+                style={{ border: '1px solid var(--brand)', color: 'var(--brand)', background: 'transparent' }}>
                 Upgrade
               </button>
             )}
