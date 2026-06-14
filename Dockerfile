@@ -13,7 +13,7 @@ RUN dotnet publish src/SchoolKart.API/SchoolKart.API.csproj -c Release -o /backe
 FROM node:20-alpine AS frontend-build
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 COPY frontend/ .
 RUN npm run build
 
