@@ -14,27 +14,34 @@ public class TenantMiddleware(RequestDelegate next, IMemoryCache cache)
         if (ctx.User.Identity?.IsAuthenticated == true)
         {
             var tenantIdClaim = ctx.User.FindFirst("tid")?.Value;
-            if (Guid.TryParse(tenantIdClaim, out var tenantId) && tenantId != Guid.Empty)
+
+            // Temp tokens (2FA, password-reset) have no "tid" claim.
+            // Reject them immediately so they can't reach tenant-scoped endpoints.
+            if (!Guid.TryParse(tenantIdClaim, out var tenantId) || tenantId == Guid.Empty)
             {
-                var cacheKey = $"tenant:{tenantId}";
-                if (!cache.TryGetValue(cacheKey, out Tenant? tenant))
-                {
-                    tenant = await db.Tenants
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(t => t.Id == tenantId);
-
-                    if (tenant is not null)
-                        cache.Set(cacheKey, tenant, TimeSpan.FromMinutes(5));
-                }
-
-                if (tenant is null || !tenant.IsActive)
-                {
-                    ctx.Response.StatusCode = 403;
-                    await ctx.Response.WriteAsJsonAsync(new { error = "Tenant not found or inactive" });
-                    return;
-                }
-                ctx.Items["Tenant"] = tenant;
+                ctx.Response.StatusCode = 403;
+                await ctx.Response.WriteAsJsonAsync(new { error = "Tenant context required. Use a full access token." });
+                return;
             }
+
+            var cacheKey = $"tenant:{tenantId}";
+            if (!cache.TryGetValue(cacheKey, out Tenant? tenant))
+            {
+                tenant = await db.Tenants
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(t => t.Id == tenantId);
+
+                if (tenant is not null)
+                    cache.Set(cacheKey, tenant, TimeSpan.FromMinutes(5));
+            }
+
+            if (tenant is null || !tenant.IsActive)
+            {
+                ctx.Response.StatusCode = 403;
+                await ctx.Response.WriteAsJsonAsync(new { error = "Tenant not found or inactive" });
+                return;
+            }
+            ctx.Items["Tenant"] = tenant;
         }
         await next(ctx);
     }
