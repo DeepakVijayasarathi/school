@@ -215,7 +215,7 @@ public class VisitorController(AppDbContext db, ITenantContext tenant) : Control
 
     [HttpPost("gate-passes/{id:guid}/action")]
     [HttpPost("gate-passes/{id:guid}/approve")]
-    public async Task<IActionResult> GatePassAction(Guid id, [FromBody] ApproveGatePassRequest req, CancellationToken ct)
+    public async Task<IActionResult> GatePassAction(Guid id, [FromBody] ApproveGatePassRequest? req, CancellationToken ct)
     {
         var gatePass = await db.Set<GatePass>()
             .FirstOrDefaultAsync(gp => gp.Id == id && gp.TenantId == tenant.TenantId, ct);
@@ -223,7 +223,11 @@ public class VisitorController(AppDbContext db, ITenantContext tenant) : Control
 
         var userId = User.FindFirst("sub") is { } c ? Guid.Parse(c.Value) : (Guid?)null;
 
-        switch (req.Action.ToLower())
+        // Derive action from URL segment when body is absent (e.g. /approve route)
+        var routeAction = HttpContext.Request.Path.Value?.Split('/').LastOrDefault()?.ToLower();
+        var action = req?.Action?.ToLower()
+            ?? (routeAction is "approve" or "reject" or "out" or "in" ? routeAction : "");
+        switch (action)
         {
             case "approve":
                 gatePass.Status = "approved";

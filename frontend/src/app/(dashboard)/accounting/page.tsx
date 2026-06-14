@@ -250,7 +250,7 @@ function VouchersTab() {
           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
               <h3 className="font-semibold text-gray-900">Create Voucher</h3>
-              <button onClick={() => setShowCreate(false)} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 transition-all">
+              <button onClick={() => { setShowCreate(false); setNarration(''); setVoucherType('payment'); setDate(new Date().toISOString().split('T')[0]); setEntries([{ ledgerId: '', entryType: 'debit', amount: '', narration: '' }, { ledgerId: '', entryType: 'credit', amount: '', narration: '' }]) }} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 transition-all">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -326,7 +326,7 @@ function VouchersTab() {
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0">
-              <button onClick={() => setShowCreate(false)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-all">Cancel</button>
+              <button onClick={() => { setShowCreate(false); setNarration(''); setVoucherType('payment'); setDate(new Date().toISOString().split('T')[0]); setEntries([{ ledgerId: '', entryType: 'debit', amount: '', narration: '' }, { ledgerId: '', entryType: 'credit', amount: '', narration: '' }]) }} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-all">Cancel</button>
               <button onClick={handleCreate} disabled={!isBalanced || createMutation.isPending}
                 className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2 transition-all hover:bg-blue-700">
                 {createMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}

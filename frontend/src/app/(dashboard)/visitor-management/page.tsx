@@ -34,10 +34,8 @@ export default function VisitorManagementPage() {
   })
 
   const gatePassActionMutation = useMutation({
-    mutationFn: ({ id, action }: { id: string; action: string }) =>
-      action === 'approve'
-        ? visitorApi.approveGatePass(id)
-        : httpClient.post(`/visitor/gate-passes/${id}/${action}`),
+    mutationFn: ({ id, action, reason }: { id: string; action: string; reason?: string }) =>
+      visitorApi.gatePassAction(id, action, reason),
     onSuccess: () => { toast.success('Gate pass updated'); qc.invalidateQueries({ queryKey: ['gate-passes'] }) },
     onError: () => toast.error('Action failed'),
   })

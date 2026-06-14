@@ -66,12 +66,12 @@ export default function InventoryPage() {
 
   const addAssetMutation = useMutation({
     mutationFn: () => inventoryApi.createAsset({ ...assetForm, purchaseDate: assetForm.purchaseDate || undefined }),
-    onSuccess: () => { toast.success('Asset added'); setShowAddAsset(false); qc.invalidateQueries({ queryKey: ['assets'] }); qc.invalidateQueries({ queryKey: ['inventory-stats'] }) },
+    onSuccess: () => { toast.success('Asset added'); setShowAddAsset(false); setAssetForm({ categoryId: '', name: '', serialNumber: '', brand: '', model: '', location: '', purchasePrice: 0, purchaseDate: '' }); qc.invalidateQueries({ queryKey: ['assets'] }); qc.invalidateQueries({ queryKey: ['inventory-stats'] }) },
   })
 
   const addStockMutation = useMutation({
     mutationFn: () => inventoryApi.createStockItem(stockForm),
-    onSuccess: () => { toast.success('Stock item added'); setShowAddStock(false); qc.invalidateQueries({ queryKey: ['stock'] }) },
+    onSuccess: () => { toast.success('Stock item added'); setShowAddStock(false); setStockForm({ categoryId: '', name: '', unit: 'pcs', minimumStock: 5, unitPrice: 0, supplier: '' }); qc.invalidateQueries({ queryKey: ['stock'] }) },
   })
 
   const txMutation = useMutation({
@@ -375,7 +375,7 @@ export default function InventoryPage() {
               </div>
             </div>
             <div className="flex gap-2 mt-5">
-              <button onClick={() => setShowAddAsset(false)}
+              <button onClick={() => { setShowAddAsset(false); setAssetForm({ categoryId: '', name: '', serialNumber: '', brand: '', model: '', location: '', purchasePrice: 0, purchaseDate: '' }) }}
                 className="flex-1 py-2 border border-gray-200 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
               <button onClick={() => addAssetMutation.mutate()}
                 disabled={addAssetMutation.isPending || !assetForm.name}
@@ -436,7 +436,7 @@ export default function InventoryPage() {
               </div>
             </div>
             <div className="flex gap-2 mt-5">
-              <button onClick={() => setShowAddStock(false)}
+              <button onClick={() => { setShowAddStock(false); setStockForm({ categoryId: '', name: '', unit: 'pcs', minimumStock: 5, unitPrice: 0, supplier: '' }) }}
                 className="flex-1 py-2 border border-gray-200 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
               <button onClick={() => addStockMutation.mutate()}
                 disabled={addStockMutation.isPending || !stockForm.name}
@@ -483,7 +483,7 @@ export default function InventoryPage() {
               </div>
             </div>
             <div className="flex gap-2 mt-5">
-              <button onClick={() => setShowTxModal(null)}
+              <button onClick={() => { setShowTxModal(null); setTxForm({ type: 'in', quantity: 1, reason: '' }) }}
                 className="flex-1 py-2 border border-gray-200 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
               <button onClick={() => txMutation.mutate()}
                 disabled={txMutation.isPending}

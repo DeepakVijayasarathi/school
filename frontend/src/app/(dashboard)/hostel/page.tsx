@@ -57,6 +57,7 @@ export default function HostelPage() {
     onSuccess: () => {
       toast.success('Hostel created')
       setShowAddHostel(false)
+      setHostelForm({ name: '', type: 'boys', warden: '', wardenPhone: '', totalRooms: 20 })
       qc.invalidateQueries({ queryKey: ['hostels'] })
     },
   })
@@ -66,6 +67,7 @@ export default function HostelPage() {
     onSuccess: () => {
       toast.success('Visitor checked in')
       setShowCheckin(false)
+      setCheckinForm({ studentId: '', visitorName: '', visitorPhone: '', relation: '', purpose: '', idProofType: 'Aadhaar', idProofNumber: '' })
       qc.invalidateQueries({ queryKey: ['visitors'] })
       qc.invalidateQueries({ queryKey: ['hostel-stats'] })
     },
@@ -383,7 +385,7 @@ export default function HostelPage() {
               </div>
             </div>
             <div className="flex gap-2 mt-5">
-              <button onClick={() => setShowAddHostel(false)}
+              <button onClick={() => { setShowAddHostel(false); setHostelForm({ name: '', type: 'boys', warden: '', wardenPhone: '', totalRooms: 20 }) }}
                 className="flex-1 py-2 border border-gray-200 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
               <button onClick={() => addHostelMutation.mutate()}
                 disabled={addHostelMutation.isPending || !hostelForm.name}
@@ -419,7 +421,7 @@ export default function HostelPage() {
               ))}
             </div>
             <div className="flex gap-2 mt-5">
-              <button onClick={() => setShowCheckin(false)}
+              <button onClick={() => { setShowCheckin(false); setCheckinForm({ studentId: '', visitorName: '', visitorPhone: '', relation: '', purpose: '', idProofType: 'Aadhaar', idProofNumber: '' }) }}
                 className="flex-1 py-2 border border-gray-200 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
               <button onClick={() => checkinMutation.mutate()}
                 disabled={checkinMutation.isPending || !checkinForm.visitorName}

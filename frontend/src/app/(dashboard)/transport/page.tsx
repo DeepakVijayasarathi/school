@@ -328,7 +328,7 @@ export default function TransportPage() {
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h3 className="text-base font-semibold text-gray-900">Add Route</h3>
-              <button onClick={() => setShowAddRoute(false)} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
+              <button onClick={() => { setShowAddRoute(false); setRouteForm({ ...emptyRoute }) }} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -364,7 +364,7 @@ export default function TransportPage() {
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
-              <button onClick={() => setShowAddRoute(false)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-all">Cancel</button>
+              <button onClick={() => { setShowAddRoute(false); setRouteForm({ ...emptyRoute }) }} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-all">Cancel</button>
               <button
                 onClick={() => addRouteMutation.mutate()}
                 disabled={!routeForm.name.trim() || addRouteMutation.isPending}
@@ -384,7 +384,7 @@ export default function TransportPage() {
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
               <h3 className="text-base font-semibold text-gray-900">Add Vehicle</h3>
-              <button onClick={() => setShowAddVehicle(false)} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
+              <button onClick={() => { setShowAddVehicle(false); setVehicleForm({ ...emptyVehicle }) }} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -430,7 +430,7 @@ export default function TransportPage() {
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0">
-              <button onClick={() => setShowAddVehicle(false)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-all">Cancel</button>
+              <button onClick={() => { setShowAddVehicle(false); setVehicleForm({ ...emptyVehicle }) }} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-all">Cancel</button>
               <button
                 onClick={() => addVehicleMutation.mutate()}
                 disabled={!vehicleForm.registration || addVehicleMutation.isPending}

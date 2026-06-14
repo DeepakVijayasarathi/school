@@ -290,7 +290,9 @@ export const visitorApi = {
   checkOut: (id: string) => api.post(`/visitor/check-out/${id}`),
   getGatePasses: (params?: any) => api.get('/visitor/gate-passes', { params }),
   createGatePass: (data: any) => api.post('/visitor/gate-passes', data),
-  approveGatePass: (id: string) => api.post(`/visitor/gate-passes/${id}/approve`),
+  approveGatePass: (id: string) => api.post(`/visitor/gate-passes/${id}/action`, { action: 'approve' }),
+  gatePassAction: (id: string, action: string, reason?: string) =>
+    api.post(`/visitor/gate-passes/${id}/action`, { action, reason }),
   getCurrentlyInside: () => api.get('/visitor/currently-inside'),
 }
 
