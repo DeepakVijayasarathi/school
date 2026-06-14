@@ -5,9 +5,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { libraryApi, studentsApi } from '@/lib/api'
 import { formatDate, cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { Plus, Search, BookOpen, RotateCcw, AlertTriangle, Loader2 } from 'lucide-react'
+import { Plus, Search, BookOpen, RotateCcw, AlertTriangle, Loader2, X } from 'lucide-react'
 
 const ISSUE_DAYS = 14
+const inputCls = 'w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all'
+const emptyBook = { title: '', author: '', isbn: '', category: '', publisher: '', rackNumber: '', totalCopies: '1', description: '' }
 
 export default function LibraryPage() {
   const [tab, setTab] = useState<'books' | 'issues' | 'return'>('books')
@@ -17,6 +19,8 @@ export default function LibraryPage() {
   const [selectedStudentId, setSelectedStudentId] = useState('')
   const [selectedStudentName, setSelectedStudentName] = useState('')
   const [returnId, setReturnId] = useState('')
+  const [showAddBook, setShowAddBook] = useState(false)
+  const [bookForm, setBookForm] = useState({ ...emptyBook })
   const qc = useQueryClient()
 
   const { data: stats } = useQuery({
@@ -40,6 +44,27 @@ export default function LibraryPage() {
     queryKey: ['students-search', studentSearch],
     queryFn: () => studentsApi.list({ search: studentSearch, pageSize: 8 }).then(r => r.data),
     enabled: studentSearch.length > 2,
+  })
+
+  const addBookMutation = useMutation({
+    mutationFn: () => libraryApi.addBook({
+      title: bookForm.title,
+      author: bookForm.author || undefined,
+      isbn: bookForm.isbn || undefined,
+      category: bookForm.category || undefined,
+      publisher: bookForm.publisher || undefined,
+      rackNumber: bookForm.rackNumber || undefined,
+      totalCopies: Number(bookForm.totalCopies) || 1,
+      description: bookForm.description || undefined,
+    }),
+    onSuccess: () => {
+      toast.success('Book added to library')
+      setShowAddBook(false)
+      setBookForm({ ...emptyBook })
+      qc.invalidateQueries({ queryKey: ['books'] })
+      qc.invalidateQueries({ queryKey: ['library-stats'] })
+    },
+    onError: () => toast.error('Failed to add book'),
   })
 
   const issueMutation = useMutation({
@@ -81,7 +106,10 @@ export default function LibraryPage() {
           <p className="text-gray-500 text-sm">Book management and issue/return</p>
         </div>
         {tab === 'books' && (
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+          <button
+            onClick={() => setShowAddBook(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 active:scale-95 transition-all shadow-sm shadow-blue-200"
+          >
             <Plus className="w-4 h-4" /> Add Book
           </button>
         )}
@@ -267,6 +295,79 @@ export default function LibraryPage() {
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {/* Add Book Modal */}
+      {showAddBook && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+              <h3 className="text-base font-semibold text-gray-900">Add Book to Library</h3>
+              <button onClick={() => setShowAddBook(false)} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Title <span className="text-red-500">*</span></label>
+                <input value={bookForm.title} onChange={e => setBookForm(f => ({ ...f, title: e.target.value }))}
+                  placeholder="Book title" className={inputCls} autoFocus />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Author</label>
+                  <input value={bookForm.author} onChange={e => setBookForm(f => ({ ...f, author: e.target.value }))}
+                    placeholder="Author name" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">ISBN / Barcode</label>
+                  <input value={bookForm.isbn} onChange={e => setBookForm(f => ({ ...f, isbn: e.target.value }))}
+                    placeholder="ISBN or barcode" className={inputCls} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
+                  <input value={bookForm.category} onChange={e => setBookForm(f => ({ ...f, category: e.target.value }))}
+                    placeholder="e.g. Science, Maths" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Publisher</label>
+                  <input value={bookForm.publisher} onChange={e => setBookForm(f => ({ ...f, publisher: e.target.value }))}
+                    placeholder="Publisher name" className={inputCls} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Rack / Shelf</label>
+                  <input value={bookForm.rackNumber} onChange={e => setBookForm(f => ({ ...f, rackNumber: e.target.value }))}
+                    placeholder="e.g. A-12" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">No. of Copies</label>
+                  <input type="number" min="1" value={bookForm.totalCopies}
+                    onChange={e => setBookForm(f => ({ ...f, totalCopies: e.target.value }))} className={inputCls} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+                <textarea rows={2} value={bookForm.description} onChange={e => setBookForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="Brief description (optional)" className={inputCls + ' resize-none'} />
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0">
+              <button onClick={() => setShowAddBook(false)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-all">Cancel</button>
+              <button
+                onClick={() => addBookMutation.mutate()}
+                disabled={!bookForm.title.trim() || addBookMutation.isPending}
+                className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+              >
+                {addBookMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                Add Book
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
