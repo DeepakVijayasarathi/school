@@ -302,7 +302,7 @@ function CheckInModal({ onClose, onSaved }: any) {
 
         {mutation.data && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
-            Visitor checked in. Badge: <strong>{mutation.data.badgeNumber}</strong>
+            Visitor checked in. Badge: <strong>{(mutation.data as any)?.data?.badgeNumber}</strong>
           </div>
         )}
       </div>
