@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { visitorApi, api as httpClient } from '@/lib/api'
 import toast from 'react-hot-toast'
-import { Plus, Search, LogIn, LogOut, X, User } from 'lucide-react'
+import { Plus, Search, LogIn, LogOut, X, User, Loader2 } from 'lucide-react'
 
 const PURPOSES = ['meeting', 'parent_visit', 'delivery', 'maintenance', 'official', 'interview', 'other']
 
@@ -16,7 +16,7 @@ export default function VisitorManagementPage() {
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [showGatePass, setShowGatePass] = useState(false)
 
-  const { data: visitors } = useQuery({
+  const { data: visitors, isLoading: visitorsLoading } = useQuery({
     queryKey: ['visitors', tab, search],
     queryFn: () => visitorApi.getVisitors({ status: tab === 'current' ? 'checked_in' : undefined, search: search || undefined }).then(r => r.data),
     refetchInterval: 30000,
@@ -25,7 +25,6 @@ export default function VisitorManagementPage() {
   const { data: gatePasses } = useQuery({
     queryKey: ['gate-passes'],
     queryFn: () => visitorApi.getGatePasses({ status: 'pending' }).then(r => r.data),
-    enabled: tab === 'gate-passes',
   })
 
   const checkOutMutation = useMutation({
@@ -106,7 +105,11 @@ export default function VisitorManagementPage() {
       {/* Visitor Table */}
       {(tab === 'current' || tab === 'history') && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full">
+          {visitorsLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+          ) : (
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px]">
             <thead className="bg-gray-50 border-b">
               <tr>
                 {['Visitor', 'Purpose', 'Host', 'Check In', 'Check Out', 'Duration', 'Badge', 'Actions'].map(h => (
@@ -128,7 +131,7 @@ export default function VisitorManagementPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm capitalize text-gray-600">{v.purpose?.replace('_', ' ')}</td>
+                  <td className="px-4 py-3 text-sm capitalize text-gray-600">{v.purpose?.replace(/_/g, ' ')}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {v.hostName}
                     {v.hostDepartment && <span className="block text-xs text-gray-400">{v.hostDepartment}</span>}
@@ -153,13 +156,16 @@ export default function VisitorManagementPage() {
               )}
             </tbody>
           </table>
+          </div>
+          )}
         </div>
       )}
 
       {/* Gate Passes */}
       {tab === 'gate-passes' && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[650px]">
             <thead className="bg-gray-50 border-b">
               <tr>
                 {['Pass No', 'Student', 'Reason', 'Authorized Person', 'Expected Return', 'Status', 'Actions'].map(h => (
@@ -201,6 +207,7 @@ export default function VisitorManagementPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -232,7 +239,12 @@ function CheckInModal({ onClose, onSaved }: any) {
 
   const mutation = useMutation({
     mutationFn: (data: any) => visitorApi.checkIn(data),
-    onSuccess: onSaved,
+    onSuccess: (res) => {
+      const badge = (res as any)?.data?.badgeNumber
+      toast.success(badge ? `Checked in! Badge: ${badge}` : 'Visitor checked in')
+      onSaved()
+    },
+    onError: () => toast.error('Check-in failed'),
   })
 
   const upd = (f: string, v: any) => setForm(p => ({ ...p, [f]: v }))
@@ -300,11 +312,6 @@ function CheckInModal({ onClose, onSaved }: any) {
           </button>
         </div>
 
-        {mutation.data && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
-            Visitor checked in. Badge: <strong>{(mutation.data as any)?.data?.badgeNumber}</strong>
-          </div>
-        )}
       </div>
     </div>
   )
