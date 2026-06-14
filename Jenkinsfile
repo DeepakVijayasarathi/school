@@ -12,7 +12,7 @@ pipeline {
         DB_NAME         = "schoolcrm"
         DB_USER         = "admin"
         DB_PASSWORD     = "ScaleLite2026XkP9mNqR"
-        JWT_SECRET      = "schoolkart_jwt_secret_key_2024"
+        JWT_SECRET      = "schoolkart_jwt_secret_key_2024_prod"
         REDIS_HOST      = "localhost"
         SERVER_IP           = "93.127.194.128"
         NEXT_PUBLIC_API_URL = "http://93.127.194.128:${PORT_BACKEND}"
