@@ -15,6 +15,8 @@ WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --legacy-peer-deps
 COPY frontend/ .
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN mkdir -p public && npm run build
 
 # ── Stage 3: Runtime (both services in one container) ─────────────────────────
