@@ -14,7 +14,8 @@ pipeline {
         DB_PASSWORD     = "ScaleLite2026XkP9mNqR"
         JWT_SECRET      = "schoolkart_jwt_secret_key_2024"
         REDIS_HOST      = "localhost"
-        NEXT_PUBLIC_API_URL = "http://localhost:${PORT_BACKEND}"
+        SERVER_IP           = "93.127.194.128"
+        NEXT_PUBLIC_API_URL = "http://93.127.194.128:${PORT_BACKEND}"
     }
 
     stages {
