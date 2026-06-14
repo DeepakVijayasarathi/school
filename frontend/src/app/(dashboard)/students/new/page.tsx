@@ -105,19 +105,48 @@ export default function NewStudentPage() {
 
   const handleSubmit = () => {
     if (!validateStep()) return
-    const primaryGuardian = {
-      firstName: formData.fatherName || formData.guardianName || formData.motherName,
-      lastName: '',
-      phone: formData.fatherPhone || formData.guardianPhone || formData.motherPhone,
-      email: formData.fatherEmail || formData.motherEmail,
-      occupation: formData.fatherOccupation || formData.motherOccupation,
-      relation: formData.fatherName ? 'Father' : formData.motherName ? 'Mother' : 'Guardian',
-      isPickup: true
+
+    // Blood group display values ("A+") don't match .NET enum names ("APositive") — map them
+    const BLOOD_GROUP: Record<string, string> = {
+      'A+': 'APositive',  'A-': 'ANegative',
+      'B+': 'BPositive',  'B-': 'BNegative',
+      'AB+': 'ABPositive','AB-': 'ABNegative',
+      'O+': 'OPositive',  'O-': 'ONegative',
     }
+
+    const primaryGuardian = {
+      firstName:  formData.fatherName || formData.guardianName || formData.motherName,
+      lastName:   '',
+      phone:      formData.fatherPhone || formData.guardianPhone || formData.motherPhone,
+      email:      formData.fatherEmail || formData.motherEmail || undefined,
+      occupation: formData.fatherOccupation || formData.motherOccupation || undefined,
+      relation:   formData.fatherName ? 'Father' : formData.motherName ? 'Mother' : 'Guardian',
+      isPickup:   true,
+    }
+
+    // Send only the fields CreateStudentRequest expects — no stray keys that confuse the binder
     mutation.mutate({
-      ...formData,
+      firstName:      formData.firstName,
+      lastName:       formData.lastName       || undefined,
+      gender:         formData.gender,
+      dateOfBirth:    formData.dateOfBirth,
+      bloodGroup:     formData.bloodGroup ? BLOOD_GROUP[formData.bloodGroup] : undefined,
+      religion:       formData.religion       || undefined,
+      caste:          formData.caste          || undefined,
+      category:       formData.category       || undefined,
+      motherTongue:   formData.motherTongue   || undefined,
+      aadharNumber:   formData.aadharNumber   || undefined,
+      address:        formData.address        || undefined,
+      city:           formData.city           || undefined,
+      state:          formData.state          || undefined,
+      pincode:        formData.pincode        || undefined,
+      admissionDate:  new Date().toISOString().split('T')[0],
+      previousSchool: formData.previousSchool || undefined,
+      previousClass:  formData.previousClass  || undefined,
+      academicYearId: formData.academicYearId,
+      classId:        formData.classId,
+      sectionId:      formData.sectionId,
       primaryGuardian,
-      admissionDate: new Date().toISOString().split('T')[0],
     })
   }
 

@@ -136,7 +136,14 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(opt =>
+    {
+        // Accept enum names as strings ("Male", "Father", "APositive" …) in addition to ints.
+        // Without this the default System.Text.Json serializer only accepts integer enum values.
+        opt.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
