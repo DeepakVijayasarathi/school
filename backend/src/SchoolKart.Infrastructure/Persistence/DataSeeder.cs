@@ -8,8 +8,9 @@ public static class DataSeeder
 {
     public static async Task SeedAsync(AppDbContext db)
     {
-        // Skip if already seeded
-        if (await db.Tenants.AnyAsync()) return;
+        // IgnoreQueryFilters so the IsActive global filter does not hide an
+        // existing (possibly inactive) tenant and trigger a duplicate-key error.
+        if (await db.Tenants.IgnoreQueryFilters().AnyAsync()) return;
 
         // ── System Roles ───────────────────────────────────────────────────────
         var allPerms = new List<string>

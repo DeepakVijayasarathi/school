@@ -19,6 +19,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     {
         var info = await db.Tenants
             .AsNoTracking()
+            .IgnoreQueryFilters()   // middleware already verified tenant is active
             .Where(t => t.Id == tenant.TenantId)
             .Select(t => new {
                 t.Id, t.Name, t.Phone, t.Email, t.Website,

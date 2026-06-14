@@ -174,8 +174,8 @@ app.Use(async (ctx, next) =>
 
 app.UseIpRateLimiting();
 app.UseSerilogRequestLogging();
-app.UseMiddleware<TenantMiddleware>();
-app.UseAuthentication();
+app.UseAuthentication();               // must run before TenantMiddleware so ctx.User is populated
+app.UseMiddleware<TenantMiddleware>(); // reads ctx.User claims to resolve & validate the tenant
 app.UseAuthorization();
 app.MapControllers();
 
