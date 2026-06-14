@@ -121,13 +121,24 @@ pipeline {
             echo "Backend API: http://${SERVER_IP}:${PORT_BACKEND}/swagger"
         }
         failure {
-            echo "Build #${BUILD_NUMBER} failed — rolling back to previous image"
+            echo "Build #${BUILD_NUMBER} failed — rolling back to last known-good image"
             sh """
                 docker stop ${CONTAINER_NAME} || true
                 docker rm   ${CONTAINER_NAME} || true
 
+                # Walk backwards to find a tag that actually exists as an image
                 PREV=\$(( ${BUILD_NUMBER} - 1 ))
-                if [ "\$PREV" -gt 0 ]; then
+                ROLLBACK_IMAGE=""
+                while [ "\$PREV" -gt 0 ]; do
+                    if docker image inspect ${IMAGE_NAME}:\$PREV > /dev/null 2>&1; then
+                        ROLLBACK_IMAGE="${IMAGE_NAME}:\$PREV"
+                        break
+                    fi
+                    PREV=\$(( \$PREV - 1 ))
+                done
+
+                if [ -n "\$ROLLBACK_IMAGE" ]; then
+                    echo "Rolling back to \$ROLLBACK_IMAGE"
                     docker run -d \
                         --name ${CONTAINER_NAME} \
                         --restart unless-stopped \
@@ -141,9 +152,9 @@ pipeline {
                         -p ${PORT_FRONTEND}:3000 \
                         -p ${PORT_BACKEND}:8080 \
                         -v schoolkart-uploads:/app/uploads \
-                        ${IMAGE_NAME}:\$PREV 2>/dev/null || echo "No previous image to roll back to"
+                        \$ROLLBACK_IMAGE || echo "Rollback container failed to start"
                 else
-                    echo "Build #1 failed — no previous image to roll back to"
+                    echo "No previous image found — app is offline until next successful build"
                 fi
             """
         }

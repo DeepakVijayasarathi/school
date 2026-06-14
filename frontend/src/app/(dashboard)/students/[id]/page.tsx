@@ -425,7 +425,7 @@ function DocumentsTab({ student }: { student: any }) {
 function MedicalTab({ studentId }: { studentId: string }) {
   const { data } = useQuery({
     queryKey: ['student-medical', studentId],
-    queryFn: () => fetch(`/api/students/${studentId}/medical`).then(r => r.json()).catch(() => null),
+    queryFn: () => api.get(`/students/${studentId}/medical`).then(r => r.data).catch(() => null),
   })
 
   if (!data) return <p className="text-gray-400 text-sm text-center py-8">No medical records on file.</p>
@@ -448,7 +448,7 @@ function MedicalTab({ studentId }: { studentId: string }) {
 function DisciplinaryTab({ studentId }: { studentId: string }) {
   const { data } = useQuery({
     queryKey: ['student-disciplinary', studentId],
-    queryFn: () => fetch(`/api/students/${studentId}/disciplinary`).then(r => r.json()).catch(() => []),
+    queryFn: () => api.get(`/students/${studentId}/disciplinary`).then(r => r.data).catch(() => []),
   })
 
   return (

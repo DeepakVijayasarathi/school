@@ -27,7 +27,8 @@ var npgsqlDataSource = new NpgsqlDataSourceBuilder(
     .Build();
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseNpgsql(npgsqlDataSource,
-        b => b.MigrationsAssembly("SchoolKart.Infrastructure")));
+        b => b.MigrationsAssembly("SchoolKart.Infrastructure"))
+       .ConfigureWarnings(w => w.Log(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
 // Redis Cache — fall back to in-memory when Redis is unavailable
 var redisConnStr = builder.Configuration.GetConnectionString("Redis");
