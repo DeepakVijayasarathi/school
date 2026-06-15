@@ -164,6 +164,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHealthChecks("/health");
+app.UseMiddleware<ExceptionMiddleware>(); // catch-all — must be first in pipeline
 app.UseCors("AllowFrontend");        // CORS before rate limiting so OPTIONS preflight is never blocked
 
 // Security headers on every response

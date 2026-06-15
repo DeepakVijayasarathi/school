@@ -42,7 +42,8 @@ public class AuthController(IAuthService authService, ITenantContext tenantConte
     {
         var result = await authService.ForgotPasswordAsync(request, ct);
         if (!result.IsSuccess) return StatusCode(result.StatusCode, new { error = result.Error });
-        return Ok(new { message = "OTP sent. Use the code to reset your password.", token = result.Data!.Token, otp = result.Data.Otp });
+        // OTP is delivered via email/SMS in production; never expose it in the HTTP response
+        return Ok(new { message = "OTP sent to your registered email/phone. Use it to reset your password.", token = result.Data!.Token });
     }
 
     [HttpPost("reset-password")]

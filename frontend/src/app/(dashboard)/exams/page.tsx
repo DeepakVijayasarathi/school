@@ -10,8 +10,6 @@ import type { Exam, ExamResult } from '@/types'
 
 const EXAM_TYPES = ['unit_test', 'half_yearly', 'annual', 'monthly', 'weekly', 'mock', 'practical']
 
-const inputCls = 'w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all'
-
 export default function ExamsPage() {
   const [selectedExamId, setSelectedExamId] = useState('')
   const [sectionId, setSectionId] = useState('')
@@ -74,12 +72,12 @@ export default function ExamsPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Exam Management</h1>
-          <p className="text-gray-500 text-sm">{exams?.length ?? 0} exams</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-1)' }}>Exam Management</h1>
+          <p className="text-sm" style={{ color: 'var(--text-3)' }}>{exams?.length ?? 0} exams</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 active:scale-95 transition-all shadow-sm shadow-blue-200"
+          className="btn btn-primary flex items-center gap-2 active:scale-95 transition-all"
         >
           <Plus className="w-4 h-4" /> Create Exam
         </button>
@@ -87,14 +85,14 @@ export default function ExamsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Exams list */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-800">Exams</h3>
+        <div className="card overflow-hidden">
+          <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+            <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>Exams</h3>
           </div>
-          <div className="divide-y divide-gray-50">
+          <div style={{ borderTop: 'none' }}>
             {isLoading
               ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="px-4 py-3 space-y-1.5">
+                <div key={i} className="px-4 py-3 space-y-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
                   <div className="skeleton h-3.5 w-32 rounded" />
                   <div className="skeleton h-2.5 w-20 rounded" />
                 </div>
@@ -103,45 +101,65 @@ export default function ExamsPage() {
                 <button
                   key={exam.id}
                   onClick={() => setSelectedExamId(exam.id)}
-                  className={cn(
-                    'w-full text-left px-4 py-3 hover:bg-gray-50 transition relative',
-                    selectedExamId === exam.id && 'bg-blue-50'
-                  )}
+                  className="w-full text-left px-4 py-3 transition relative"
+                  style={{
+                    backgroundColor: selectedExamId === exam.id ? 'var(--brand-bg)' : 'transparent',
+                    borderBottom: '1px solid var(--border)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedExamId !== exam.id) {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-2)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedExamId !== exam.id) {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
+                    }
+                  }}
                 >
                   {selectedExamId === exam.id && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-blue-500 rounded-full" />
+                    <span
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 rounded-full"
+                      style={{ backgroundColor: 'var(--brand)' }}
+                    />
                   )}
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-900">{exam.name}</p>
-                    <span className={cn('text-xs px-2 py-0.5 rounded-full', exam.isPublished ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600')}>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>{exam.name}</p>
+                    <span className={exam.isPublished ? 'badge-active' : 'badge-draft'}>
                       {exam.isPublished ? 'Published' : 'Draft'}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5 capitalize">{exam.type?.replace(/_/g, ' ')}</p>
+                  <p className="text-xs mt-0.5 capitalize" style={{ color: 'var(--text-4)' }}>{exam.type?.replace(/_/g, ' ')}</p>
                   {exam.startDate && (
-                    <p className="text-xs text-gray-400">{formatDate(exam.startDate)}{exam.endDate ? ` – ${formatDate(exam.endDate)}` : ''}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-4)' }}>{formatDate(exam.startDate)}{exam.endDate ? ` – ${formatDate(exam.endDate)}` : ''}</p>
                   )}
                 </button>
               ))}
             {!exams?.length && !isLoading && (
               <div className="px-4 py-12 text-center">
-                <ClipboardList className="w-10 h-10 text-gray-200 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">No exams yet</p>
-                <button onClick={() => setShowCreate(true)} className="mt-2 text-xs text-blue-600 hover:underline">Create your first exam</button>
+                <ClipboardList className="w-10 h-10 mx-auto mb-2" style={{ color: 'var(--text-4)' }} />
+                <p className="text-sm" style={{ color: 'var(--text-4)' }}>No exams yet</p>
+                <button
+                  onClick={() => setShowCreate(true)}
+                  className="mt-2 text-xs hover:underline"
+                  style={{ color: 'var(--brand)' }}
+                >
+                  Create your first exam
+                </button>
               </div>
             )}
           </div>
         </div>
 
         {/* Results view */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-800">Results</h3>
+        <div className="lg:col-span-2 card overflow-hidden">
+          <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
+            <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>Results</h3>
             <div className="flex gap-2">
               <select
                 value={classId}
                 onChange={(e) => { setClassId(e.target.value); setSectionId('') }}
-                className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                className="input-base focus-ring"
                 disabled={!selectedExamId}
               >
                 <option value="">Select Class</option>
@@ -151,7 +169,7 @@ export default function ExamsPage() {
                 <select
                   value={sectionId}
                   onChange={(e) => setSectionId(e.target.value)}
-                  className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="input-base focus-ring"
                 >
                   <option value="">Section</option>
                   {sections?.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -161,31 +179,33 @@ export default function ExamsPage() {
           </div>
 
           {!selectedExamId ? (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-300 gap-3">
+            <div className="flex flex-col items-center justify-center h-64 gap-3" style={{ color: 'var(--text-4)' }}>
               <ClipboardList className="w-12 h-12" />
-              <p className="text-sm text-gray-400">Select an exam to view results</p>
+              <p className="text-sm">Select an exam to view results</p>
             </div>
           ) : !sectionId ? (
             <div className="flex items-center justify-center h-64">
-              <p className="text-sm text-gray-400">Select a class and section to view results</p>
+              <p className="text-sm" style={{ color: 'var(--text-4)' }}>Select a class and section to view results</p>
             </div>
           ) : resultsLoading ? (
-            <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--text-4)' }} />
+            </div>
           ) : results?.length ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
-                  <tr>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Rank</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Student</th>
-                    <th className="px-3 py-2.5 text-right text-xs font-semibold text-gray-500">Total</th>
-                    <th className="px-3 py-2.5 text-right text-xs font-semibold text-gray-500">%</th>
-                    <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-500">Result</th>
+                <thead>
+                  <tr className="table-header">
+                    <th className="table-cell text-left">Rank</th>
+                    <th className="table-cell text-left">Student</th>
+                    <th className="table-cell text-right">Total</th>
+                    <th className="table-cell text-right">%</th>
+                    <th className="table-cell text-center">Result</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody>
                   {(results as ExamResult[]).map((r) => (
-                    <tr key={r.id} className="hover:bg-gray-50">
+                    <tr key={r.id} className="table-row-hover">
                       <td className="px-3 py-2.5">
                         <span className={cn(
                           'w-7 h-7 rounded-full inline-flex items-center justify-center text-xs font-bold',
@@ -198,12 +218,12 @@ export default function ExamsPage() {
                         </span>
                       </td>
                       <td className="px-3 py-2.5">
-                        <p className="font-medium text-gray-900">{r.fullName}</p>
-                        <p className="text-xs text-gray-400">{r.admissionNumber}</p>
+                        <p className="font-medium" style={{ color: 'var(--text-1)' }}>{r.fullName}</p>
+                        <p className="text-xs" style={{ color: 'var(--text-4)' }}>{r.admissionNumber}</p>
                       </td>
                       <td className="px-3 py-2.5 text-right">
                         <span className="font-medium">{r.totalObtained}</span>
-                        <span className="text-gray-400">/{r.totalMaxMarks}</span>
+                        <span style={{ color: 'var(--text-4)' }}>/{r.totalMaxMarks}</span>
                       </td>
                       <td className="px-3 py-2.5 text-right font-medium">{r.percentage}%</td>
                       <td className="px-3 py-2.5 text-center">
@@ -215,54 +235,62 @@ export default function ExamsPage() {
               </table>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-64 text-sm text-gray-400">No results for this section</div>
+            <div className="flex items-center justify-center h-64 text-sm" style={{ color: 'var(--text-4)' }}>No results for this section</div>
           )}
         </div>
       </div>
 
       {/* Create Exam Modal */}
       {showCreate && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h3 className="text-base font-semibold text-gray-900">Create New Exam</h3>
-              <button onClick={() => setShowCreate(false)} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(8px)' }}
+        >
+          <div className="card w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h3 className="text-base font-semibold" style={{ color: 'var(--text-1)' }}>Create New Exam</h3>
+              <button
+                onClick={() => setShowCreate(false)}
+                className="btn btn-ghost w-7 h-7 flex items-center justify-center rounded-lg transition-all p-0"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Exam Name <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-3)' }}>
+                  Exam Name <span style={{ color: 'var(--danger)' }}>*</span>
+                </label>
                 <input
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="e.g. Unit Test 1 - Term 1"
-                  className={inputCls}
+                  className="input-base focus-ring w-full"
                   autoFocus
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Type</label>
-                  <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className={inputCls}>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-3)' }}>Type</label>
+                  <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="input-base focus-ring w-full">
                     {EXAM_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Pass % (min)</label>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-3)' }}>Pass % (min)</label>
                   <input
                     type="number" min="1" max="100"
                     value={form.passPercentage}
                     onChange={e => setForm(f => ({ ...f, passPercentage: e.target.value }))}
-                    className={inputCls}
+                    className="input-base focus-ring w-full"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Academic Year</label>
-                <select value={form.academicYearId} onChange={e => setForm(f => ({ ...f, academicYearId: e.target.value }))} className={inputCls}>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-3)' }}>Academic Year</label>
+                <select value={form.academicYearId} onChange={e => setForm(f => ({ ...f, academicYearId: e.target.value }))} className="input-base focus-ring w-full">
                   <option value="">Select academic year</option>
                   {academicYears?.map((y: any) => (
                     <option key={y.id} value={y.id}>{y.name}{y.isCurrent ? ' (Current)' : ''}</option>
@@ -272,23 +300,26 @@ export default function ExamsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Date</label>
-                  <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className={inputCls} />
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-3)' }}>Start Date</label>
+                  <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="input-base focus-ring w-full" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">End Date</label>
-                  <input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className={inputCls} />
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-3)' }}>End Date</label>
+                  <input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="input-base focus-ring w-full" />
                 </div>
               </div>
             </div>
-            <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
-              <button onClick={() => setShowCreate(false)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-all">
+            <div className="flex gap-3 px-6 py-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <button
+                onClick={() => setShowCreate(false)}
+                className="btn btn-ghost flex-1 py-2.5 rounded-xl text-sm transition-all"
+              >
                 Cancel
               </button>
               <button
                 onClick={() => createMutation.mutate()}
                 disabled={!canSubmit || createMutation.isPending}
-                className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                className="btn btn-primary flex-1 py-2.5 rounded-xl text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
               >
                 {createMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 Create Exam

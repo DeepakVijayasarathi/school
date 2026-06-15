@@ -10,10 +10,30 @@ import { Save, CheckCircle, XCircle, Clock, Minus, Users, MousePointerClick } fr
 import type { AttendanceRecord } from '@/types'
 
 const STATUS_OPTIONS = [
-  { value: 'Present', label: 'P', icon: CheckCircle, color: 'text-green-600 bg-green-100 border-green-300' },
-  { value: 'Absent', label: 'A', icon: XCircle, color: 'text-red-600 bg-red-100 border-red-300' },
-  { value: 'Late', label: 'L', icon: Clock, color: 'text-yellow-600 bg-yellow-100 border-yellow-300' },
-  { value: 'HalfDay', label: 'H', icon: Minus, color: 'text-blue-600 bg-blue-100 border-blue-300' },
+  {
+    value: 'Present',
+    label: 'P',
+    icon: CheckCircle,
+    style: { color: 'var(--success)', backgroundColor: 'var(--success-bg)', borderColor: 'var(--success)' },
+  },
+  {
+    value: 'Absent',
+    label: 'A',
+    icon: XCircle,
+    style: { color: 'var(--danger)', backgroundColor: 'var(--danger-bg)', borderColor: 'var(--danger)' },
+  },
+  {
+    value: 'Late',
+    label: 'L',
+    icon: Clock,
+    style: { color: 'var(--warning)', backgroundColor: 'var(--warning-bg)', borderColor: 'var(--warning)' },
+  },
+  {
+    value: 'HalfDay',
+    label: 'H',
+    icon: Minus,
+    style: { color: 'var(--brand)', backgroundColor: 'var(--brand-bg)', borderColor: 'var(--brand)' },
+  },
 ]
 
 export default function AttendancePage() {
@@ -60,6 +80,7 @@ export default function AttendancePage() {
       toast.success('Attendance saved!')
       qc.invalidateQueries({ queryKey: ['attendance', sectionId, date] })
     },
+    onError: () => toast.error('Failed to save attendance'),
   })
 
   const markAll = (status: string) => {
@@ -80,14 +101,14 @@ export default function AttendancePage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
-          <p className="text-gray-500 text-sm">Mark student attendance</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-1)' }}>Attendance</h1>
+          <p className="text-sm" style={{ color: 'var(--text-3)' }}>Mark student attendance</p>
         </div>
         {sectionId && records && (
           <button
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
+            className="btn btn-primary flex items-center gap-2 disabled:opacity-60"
           >
             <Save className="w-4 h-4" />
             {saveMutation.isPending ? 'Saving...' : 'Save Attendance'}
@@ -96,18 +117,18 @@ export default function AttendancePage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-wrap gap-3 items-center">
+      <div className="card p-4 flex flex-wrap gap-3 items-center">
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          className="input-base focus-ring"
         />
 
         <select
           value={classId}
           onChange={(e) => { setClassId(e.target.value); setSectionId('') }}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          className="input-base focus-ring"
         >
           <option value="">Select Class</option>
           {classes?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -117,7 +138,7 @@ export default function AttendancePage() {
           <select
             value={sectionId}
             onChange={(e) => setSectionId(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            className="input-base focus-ring"
           >
             <option value="">Select Section</option>
             {sections?.map((s: any) => <option key={s.id} value={s.id}>Section {s.name}</option>)}
@@ -129,12 +150,12 @@ export default function AttendancePage() {
       {stats && (
         <div className="grid grid-cols-4 gap-4">
           {[
-            { label: 'Total', value: stats.total, color: 'bg-gray-100 text-gray-800' },
-            { label: 'Present', value: stats.present, color: 'bg-green-100 text-green-800' },
-            { label: 'Absent', value: stats.absent, color: 'bg-red-100 text-red-800' },
-            { label: 'Late', value: stats.late, color: 'bg-yellow-100 text-yellow-800' },
+            { label: 'Total', value: stats.total, style: { backgroundColor: 'var(--surface-2)', color: 'var(--text-1)' } },
+            { label: 'Present', value: stats.present, style: { backgroundColor: 'var(--success-bg)', color: 'var(--success)' } },
+            { label: 'Absent', value: stats.absent, style: { backgroundColor: 'var(--danger-bg)', color: 'var(--danger)' } },
+            { label: 'Late', value: stats.late, style: { backgroundColor: 'var(--warning-bg)', color: 'var(--warning)' } },
           ].map((s) => (
-            <div key={s.label} className={`${s.color} rounded-xl p-4 text-center`}>
+            <div key={s.label} className="rounded-xl p-4 text-center" style={s.style}>
               <p className="text-2xl font-bold">{s.value}</p>
               <p className="text-sm font-medium mt-0.5">{s.label}</p>
             </div>
@@ -145,12 +166,13 @@ export default function AttendancePage() {
       {/* Mark all buttons */}
       {records && records.length > 0 && (
         <div className="flex gap-2 items-center">
-          <span className="text-sm text-gray-500">Mark all as:</span>
+          <span className="text-sm" style={{ color: 'var(--text-3)' }}>Mark all as:</span>
           {STATUS_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               onClick={() => markAll(opt.value)}
-              className={cn('px-3 py-1.5 text-xs font-medium rounded-lg border', opt.color)}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg border-2"
+              style={opt.style}
             >
               {opt.label} - {opt.value}
             </button>
@@ -160,24 +182,24 @@ export default function AttendancePage() {
 
       {/* Attendance list */}
       {!sectionId ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center">
-          <MousePointerClick className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-gray-500">Select class and section</p>
-          <p className="text-xs text-gray-400 mt-1">Choose a class and section above to start marking attendance</p>
+        <div className="card p-16 text-center">
+          <MousePointerClick className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--text-4)' }} />
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-3)' }}>Select class and section</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-4)' }}>Choose a class and section above to start marking attendance</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px]">
-              <thead className="bg-gray-50/70 border-b border-gray-100">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-10">#</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Student</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Roll No</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+              <thead>
+                <tr className="table-header">
+                  <th className="table-cell w-10 text-left">#</th>
+                  <th className="table-cell text-left">Student</th>
+                  <th className="table-cell text-left">Roll No</th>
+                  <th className="table-cell text-left">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody>
                 {isLoading
                   ? Array.from({ length: 8 }).map((_, i) => (
                       <tr key={i}>
@@ -199,40 +221,48 @@ export default function AttendancePage() {
                   ? (
                       <tr>
                         <td colSpan={4} className="px-4 py-16 text-center">
-                          <Users className="w-10 h-10 text-gray-200 mx-auto mb-2" />
-                          <p className="text-sm text-gray-400">No students found in this section</p>
+                          <Users className="w-10 h-10 mx-auto mb-2" style={{ color: 'var(--text-4)' }} />
+                          <p className="text-sm" style={{ color: 'var(--text-4)' }}>No students found in this section</p>
                         </td>
                       </tr>
                     )
                   : records?.map((student: any, i: number) => (
-                      <tr key={student.id} className="hover:bg-blue-50/20 transition-colors">
-                        <td className="px-4 py-3 text-sm text-gray-400">{i + 1}</td>
+                      <tr key={student.id} className="table-row-hover transition-colors">
+                        <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-4)' }}>{i + 1}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm font-semibold flex-shrink-0">
+                            <div
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
+                              style={{ backgroundColor: 'var(--brand-bg)', color: 'var(--brand)' }}
+                            >
                               {student.fullName?.[0]?.toUpperCase() ?? '?'}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-900">{student.fullName}</p>
-                              <p className="text-xs text-gray-400">{student.admissionNumber}</p>
+                              <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>{student.fullName}</p>
+                              <p className="text-xs" style={{ color: 'var(--text-4)' }}>{student.admissionNumber}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{student.rollNumber ?? '—'}</td>
+                        <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-3)' }}>{student.rollNumber ?? '—'}</td>
                         <td className="px-4 py-3">
                           <div className="flex gap-1">
-                            {STATUS_OPTIONS.map((opt) => (
-                              <button
-                                key={opt.value}
-                                onClick={() => setAttendance((prev) => ({ ...prev, [student.id]: opt.value }))}
-                                className={cn(
-                                  'w-9 h-9 rounded-lg text-xs font-bold border-2 transition-all',
-                                  attendance[student.id] === opt.value ? opt.color : 'border-gray-200 text-gray-400 hover:border-gray-300'
-                                )}
-                              >
-                                {opt.label}
-                              </button>
-                            ))}
+                            {STATUS_OPTIONS.map((opt) => {
+                              const isSelected = attendance[student.id] === opt.value
+                              return (
+                                <button
+                                  key={opt.value}
+                                  onClick={() => setAttendance((prev) => ({ ...prev, [student.id]: opt.value }))}
+                                  className="w-9 h-9 rounded-lg text-xs font-bold border-2 transition-all"
+                                  style={
+                                    isSelected
+                                      ? opt.style
+                                      : { borderColor: 'var(--border)', color: 'var(--text-4)' }
+                                  }
+                                >
+                                  {opt.label}
+                                </button>
+                              )
+                            })}
                           </div>
                         </td>
                       </tr>

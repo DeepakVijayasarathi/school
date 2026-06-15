@@ -53,8 +53,8 @@ public class StudentsController(AppDbContext db, ITenantContext tenant) : Contro
         var items = await q
             .OrderBy(e => e.Section!.Name)
             .ThenBy(e => e.RollNumber)
-            .Skip((query.Page - 1) * query.PageSize)
-            .Take(query.PageSize)
+            .Skip((query.SafePage - 1) * query.SafePageSize)
+            .Take(query.SafePageSize)
             .Select(e => new StudentListDto(
                 e.Student!.Id,
                 e.Student.AdmissionNumber,

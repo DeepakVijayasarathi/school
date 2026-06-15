@@ -1,21 +1,25 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { api as httpClient, timetableApi, hrApi } from '@/lib/api'
-import { Plus, Printer, AlertTriangle, ChevronDown, X } from 'lucide-react'
+import { Plus, Printer, X } from 'lucide-react'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const SUBJECT_COLORS = [
-  'bg-blue-100 text-blue-800 border-blue-200',
-  'bg-purple-100 text-purple-800 border-purple-200',
-  'bg-green-100 text-green-800 border-green-200',
-  'bg-orange-100 text-orange-800 border-orange-200',
-  'bg-pink-100 text-pink-800 border-pink-200',
-  'bg-teal-100 text-teal-800 border-teal-200',
-  'bg-red-100 text-red-800 border-red-200',
-  'bg-yellow-100 text-yellow-800 border-yellow-200',
+
+// Palette using CSS variable colors as inline style pairs: [bg, text, border]
+const SUBJECT_COLOR_PALETTE: Array<{ bg: string; color: string; border: string }> = [
+  { bg: 'var(--brand-bg)',    color: 'var(--brand)',   border: 'var(--brand)' },
+  { bg: 'var(--success-bg)', color: 'var(--success)', border: 'var(--success)' },
+  { bg: 'var(--warning-bg)', color: 'var(--warning)', border: 'var(--warning)' },
+  { bg: 'var(--danger-bg)',  color: 'var(--danger)',  border: 'var(--danger)' },
+  // Repeat with opacity variants for more subjects
+  { bg: 'color-mix(in srgb, var(--brand) 12%, transparent)',   color: 'var(--brand)',   border: 'color-mix(in srgb, var(--brand) 40%, transparent)' },
+  { bg: 'color-mix(in srgb, var(--success) 12%, transparent)', color: 'var(--success)', border: 'color-mix(in srgb, var(--success) 40%, transparent)' },
+  { bg: 'color-mix(in srgb, var(--warning) 12%, transparent)', color: 'var(--warning)', border: 'color-mix(in srgb, var(--warning) 40%, transparent)' },
+  { bg: 'color-mix(in srgb, var(--danger) 12%, transparent)',  color: 'var(--danger)',  border: 'color-mix(in srgb, var(--danger) 40%, transparent)' },
 ]
 
 export default function TimetablePage() {
@@ -74,11 +78,11 @@ export default function TimetablePage() {
   const getCellEntry = (day: string, periodId: string) =>
     entries.find(e => e.dayOfWeek === day && e.id === periodId)
 
-  const subjectColorMap: Record<string, string> = {}
+  const subjectColorMap: Record<string, { bg: string; color: string; border: string }> = {}
   let colorIdx = 0
   entries.forEach(e => {
     if (e.subjectId && !subjectColorMap[e.subjectId]) {
-      subjectColorMap[e.subjectId] = SUBJECT_COLORS[colorIdx++ % SUBJECT_COLORS.length]
+      subjectColorMap[e.subjectId] = SUBJECT_COLOR_PALETTE[colorIdx++ % SUBJECT_COLOR_PALETTE.length]
     }
   })
 
@@ -86,46 +90,57 @@ export default function TimetablePage() {
     entries.find(e => e.dayOfWeek === day && e.periodNumber === period.periodNumber)
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 anim-fade-up">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Timetable</h1>
-          <p className="text-gray-500 text-sm">Manage class schedules and teacher assignments</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-1)' }}>Timetable</h1>
+          <p className="text-sm" style={{ color: 'var(--text-3)' }}>Manage class schedules and teacher assignments</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => window.print()} className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">
+          <button
+            onClick={() => window.print()}
+            className="btn btn-ghost flex items-center gap-2"
+          >
             <Printer className="w-4 h-4" /> Print
           </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-wrap gap-3">
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+      <div className="card p-4 flex flex-wrap gap-3">
+        <div className="flex gap-1 rounded-lg p-1" style={{ background: 'var(--surface-2)' }}>
           {(['section', 'teacher'] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
-              className={cn('px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-colors',
-                view === v ? 'bg-white shadow text-blue-600' : 'text-gray-500')}>
+              className={cn(
+                'px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-colors',
+                view === v
+                  ? 'bg-white shadow'
+                  : ''
+              )}
+              style={view === v
+                ? { color: 'var(--brand)' }
+                : { color: 'var(--text-3)' }
+              }>
               {v === 'section' ? 'Class/Section' : 'Teacher'} View
             </button>
           ))}
         </div>
 
         <select value={selectedAcademicYearId} onChange={e => setSelectedAcademicYearId(e.target.value)}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-sm">
+          className="input-base focus-ring px-3 py-2 text-sm">
           <option value="">Select Academic Year</option>
           {(academicYears as any[])?.map((y: any) => <option key={y.id} value={y.id}>{y.name}</option>)}
         </select>
 
         {view === 'section' ? (
           <select value={selectedSectionId} onChange={e => setSelectedSectionId(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm">
+            className="input-base focus-ring px-3 py-2 text-sm">
             <option value="">Select Section</option>
             {sections?.map?.((s: any) => <option key={s.id} value={s.id}>{s.className} - {s.name}</option>)}
           </select>
         ) : (
           <select value={selectedTeacherId} onChange={e => setSelectedTeacherId(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm">
+            className="input-base focus-ring px-3 py-2 text-sm">
             <option value="">Select Teacher</option>
             {employees?.items?.map?.((e: any) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
           </select>
@@ -134,39 +149,45 @@ export default function TimetablePage() {
 
       {/* Timetable Grid */}
       {isLoading ? (
-        <div className="bg-white rounded-xl p-12 text-center text-gray-400">Loading timetable...</div>
+        <div className="card p-12 text-center" style={{ color: 'var(--text-4)' }}>Loading timetable...</div>
       ) : !timetableData ? (
-        <div className="bg-white rounded-xl p-12 text-center text-gray-400">
+        <div className="card p-12 text-center" style={{ color: 'var(--text-4)' }}>
           Select an academic year and {view === 'section' ? 'section' : 'teacher'} to view the timetable.
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-auto">
+        <div className="card overflow-auto">
           <table className="w-full min-w-[700px]">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <thead style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border)' }}>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-28">Period</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-24">Time</th>
+                <th className="table-header w-28 text-left">Period</th>
+                <th className="table-header w-24 text-left">Time</th>
                 {DAYS.map(d => (
-                  <th key={d} className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">{d}</th>
+                  <th key={d} className="table-header text-center">{d}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody style={{ borderTop: '1px solid var(--border)' }}>
               {periods.filter((p: any) => !p.isBreak).map((period: any) => (
-                <tr key={period.id}>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-700">{period.name || `Period ${period.periodNumber}`}</td>
-                  <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{period.startTime}–{period.endTime}</td>
+                <tr key={period.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td className="table-cell font-medium" style={{ color: 'var(--text-2)' }}>
+                    {period.name || `Period ${period.periodNumber}`}
+                  </td>
+                  <td className="table-cell text-xs whitespace-nowrap" style={{ color: 'var(--text-3)' }}>
+                    {period.startTime}–{period.endTime}
+                  </td>
                   {DAYS.map(day => {
                     const entry = getEntriesForCell(day, period)
+                    const palette = entry?.subjectId ? subjectColorMap[entry.subjectId] : null
                     return (
                       <td key={day} className="px-2 py-2">
                         {entry ? (
                           <div
                             onClick={() => { setModal({ day, period }); setEditEntry(entry) }}
-                            className={cn(
-                              'rounded-lg p-2 border cursor-pointer hover:opacity-80 transition-opacity',
-                              entry.subjectId ? subjectColorMap[entry.subjectId] : 'bg-gray-50 border-gray-100'
-                            )}>
+                            className="rounded-lg p-2 border cursor-pointer hover:opacity-80 transition-opacity"
+                            style={palette
+                              ? { background: palette.bg, color: palette.color, borderColor: palette.border }
+                              : { background: 'var(--surface-2)', borderColor: 'var(--border)' }
+                            }>
                             <p className="text-xs font-semibold leading-tight">{entry.subjectName || '—'}</p>
                             <p className="text-xs opacity-70 truncate">{entry.teacherName || ''}</p>
                             {entry.room && <p className="text-xs opacity-50">Rm {entry.room}</p>}
@@ -174,8 +195,20 @@ export default function TimetablePage() {
                         ) : (
                           <div
                             onClick={() => { setModal({ day, period }); setEditEntry(null) }}
-                            className="rounded-lg p-2 border border-dashed border-gray-200 cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-colors min-h-[48px] flex items-center justify-center">
-                            <Plus className="w-4 h-4 text-gray-300" />
+                            className="rounded-lg p-2 border border-dashed cursor-pointer transition-colors min-h-[48px] flex items-center justify-center"
+                            style={{ borderColor: 'var(--border)' }}
+                            onMouseEnter={e => {
+                              const el = e.currentTarget as HTMLElement
+                              el.style.borderColor = 'var(--brand)'
+                              el.style.background = 'var(--brand-bg)'
+                            }}
+                            onMouseLeave={e => {
+                              const el = e.currentTarget as HTMLElement
+                              el.style.borderColor = 'var(--border)'
+                              el.style.background = ''
+                            }}
+                          >
+                            <Plus className="w-4 h-4" style={{ color: 'var(--text-4)' }} />
                           </div>
                         )}
                       </td>
@@ -192,23 +225,36 @@ export default function TimetablePage() {
       {Object.keys(subjectColorMap).length > 0 && (
         <div className="flex flex-wrap gap-2">
           {entries.filter((e, i, arr) => e.subjectId && arr.findIndex(a => a.subjectId === e.subjectId) === i)
-            .map(e => (
-              <span key={e.subjectId} className={cn('text-xs px-2 py-1 rounded-full border', subjectColorMap[e.subjectId])}>
-                {e.subjectName}
-              </span>
-            ))}
+            .map(e => {
+              const palette = subjectColorMap[e.subjectId]
+              return (
+                <span
+                  key={e.subjectId}
+                  className="text-xs px-2 py-1 rounded-full border"
+                  style={palette
+                    ? { background: palette.bg, color: palette.color, borderColor: palette.border }
+                    : {}
+                  }
+                >
+                  {e.subjectName}
+                </span>
+              )
+            })}
         </div>
       )}
 
       {/* Edit Modal */}
-      {modal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+      {modal && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(8px)' }}
+        >
+          <div className="card w-full max-w-md shadow-xl p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold">
+              <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>
                 {modal.day} — {modal.period.name || `Period ${modal.period.periodNumber}`}
               </h3>
-              <button onClick={() => setModal(null)} className="p-1 hover:bg-gray-100 rounded">
+              <button onClick={() => setModal(null)} className="btn btn-ghost p-1">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -230,7 +276,8 @@ export default function TimetablePage() {
               isSaving={saveMutation.isPending}
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
@@ -244,32 +291,32 @@ function EditPeriodForm({ entry, subjects, employees, onSave, onClose, isSaving 
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium text-gray-700">Subject</label>
+        <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Subject</label>
         <select value={subjectId} onChange={e => setSubjectId(e.target.value)}
-          className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm">
+          className="input-base focus-ring w-full mt-1 px-3 py-2 text-sm">
           <option value="">Select Subject</option>
           {subjects.map?.((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
       </div>
       <div>
-        <label className="text-sm font-medium text-gray-700">Teacher</label>
+        <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Teacher</label>
         <select value={employeeId} onChange={e => setEmployeeId(e.target.value)}
-          className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm">
+          className="input-base focus-ring w-full mt-1 px-3 py-2 text-sm">
           <option value="">Select Teacher</option>
           {employees.map?.((e: any) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
         </select>
       </div>
       <div>
-        <label className="text-sm font-medium text-gray-700">Room</label>
+        <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Room</label>
         <input value={room} onChange={e => setRoom(e.target.value)} placeholder="e.g. Room 101"
-          className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+          className="input-base focus-ring w-full mt-1 px-3 py-2 text-sm" />
       </div>
       <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 border border-gray-200 rounded-lg text-sm">Cancel</button>
+        <button onClick={onClose} className="btn btn-ghost px-4 py-2">Cancel</button>
         <button
           onClick={() => onSave({ subjectId: subjectId || null, employeeId: employeeId || null, room: room || null })}
           disabled={isSaving}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-60">
+          className="btn btn-primary px-4 py-2 disabled:opacity-60">
           {isSaving ? 'Saving...' : 'Save'}
         </button>
       </div>

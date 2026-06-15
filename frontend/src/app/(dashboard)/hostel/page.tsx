@@ -1,11 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { hostelApi } from '@/lib/api'
 import { formatDate, cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { Home, Users, Bell, AlertCircle, Plus, UserCheck, LogOut, Loader2, BedDouble } from 'lucide-react'
+
+const inputCls = 'input-base focus-ring'
 
 type Tab = 'rooms' | 'allocations' | 'visitors' | 'complaints'
 
@@ -60,6 +63,7 @@ export default function HostelPage() {
       setHostelForm({ name: '', type: 'boys', warden: '', wardenPhone: '', totalRooms: 20 })
       qc.invalidateQueries({ queryKey: ['hostels'] })
     },
+    onError: () => toast.error('Failed to create hostel'),
   })
 
   const checkinMutation = useMutation({
@@ -71,22 +75,26 @@ export default function HostelPage() {
       qc.invalidateQueries({ queryKey: ['visitors'] })
       qc.invalidateQueries({ queryKey: ['hostel-stats'] })
     },
+    onError: () => toast.error('Failed to check in visitor'),
   })
 
   const checkoutMutation = useMutation({
     mutationFn: (id: string) => hostelApi.checkOutVisitor(id),
     onSuccess: () => { toast.success('Visitor checked out'); qc.invalidateQueries({ queryKey: ['visitors'] }); qc.invalidateQueries({ queryKey: ['hostel-stats'] }) },
+    onError: () => toast.error('Failed to check out visitor'),
   })
 
   const vacateMutation = useMutation({
     mutationFn: (id: string) => hostelApi.vacateRoom(id),
     onSuccess: () => { toast.success('Room vacated'); qc.invalidateQueries({ queryKey: ['allocations'] }); qc.invalidateQueries({ queryKey: ['hostel-stats'] }) },
+    onError: () => toast.error('Failed to vacate room'),
   })
 
   const resolveComplaintMutation = useMutation({
     mutationFn: ({ id, resolution }: { id: string; resolution: string }) =>
       hostelApi.updateComplaint(id, { status: 'resolved', resolution }),
     onSuccess: () => { toast.success('Complaint resolved'); qc.invalidateQueries({ queryKey: ['complaints'] }) },
+    onError: () => toast.error('Failed to resolve complaint'),
   })
 
   const tabs: { id: Tab; label: string; icon: any }[] = [
@@ -97,22 +105,20 @@ export default function HostelPage() {
   ]
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 anim-fade-up">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Hostel</h1>
-          <p className="text-gray-500 text-sm">Room management, allocations & visitors</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-1)' }}>Hostel</h1>
+          <p className="text-sm" style={{ color: 'var(--text-3)' }}>Room management, allocations &amp; visitors</p>
         </div>
         <div className="flex gap-2">
           {tab === 'visitors' && (
-            <button onClick={() => setShowCheckin(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
+            <button onClick={() => setShowCheckin(true)} className="btn btn-primary">
               <UserCheck className="w-4 h-4" /> Check In Visitor
             </button>
           )}
-          <button onClick={() => setShowAddHostel(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+          <button onClick={() => setShowAddHostel(true)} className="btn btn-primary">
             <Plus className="w-4 h-4" /> Add Hostel
           </button>
         </div>
@@ -122,12 +128,12 @@ export default function HostelPage() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Total Rooms', value: stats.totalRooms, sub: `${stats.totalBeds} beds`, color: 'bg-blue-50 text-blue-700' },
-            { label: 'Occupied', value: stats.occupiedBeds, sub: `${stats.occupancyRate}% occupancy`, color: 'bg-orange-50 text-orange-700' },
-            { label: 'Available', value: stats.availableBeds, sub: 'beds free', color: 'bg-green-50 text-green-700' },
-            { label: 'Visitors Inside', value: stats.visitorsInside, sub: `${stats.openComplaints} open complaints`, color: 'bg-purple-50 text-purple-700' },
+            { label: 'Total Rooms', value: stats.totalRooms, sub: `${stats.totalBeds} beds`, bgVar: 'var(--brand-bg)', colorVar: 'var(--brand)' },
+            { label: 'Occupied', value: stats.occupiedBeds, sub: `${stats.occupancyRate}% occupancy`, bgVar: 'var(--warning-bg)', colorVar: 'var(--warning)' },
+            { label: 'Available', value: stats.availableBeds, sub: 'beds free', bgVar: 'var(--success-bg)', colorVar: 'var(--success)' },
+            { label: 'Visitors Inside', value: stats.visitorsInside, sub: `${stats.openComplaints} open complaints`, bgVar: 'var(--surface-2)', colorVar: 'var(--text-2)' },
           ].map(s => (
-            <div key={s.label} className={`${s.color} rounded-xl p-4`}>
+            <div key={s.label} className="rounded-xl p-4" style={{ background: s.bgVar, color: s.colorVar }}>
               <p className="text-2xl font-bold">{s.value}</p>
               <p className="text-sm font-medium mt-0.5">{s.label}</p>
               <p className="text-xs opacity-70 mt-0.5">{s.sub}</p>
@@ -139,14 +145,19 @@ export default function HostelPage() {
       {/* Hostel selector */}
       <div className="flex gap-2 flex-wrap">
         {hostelsLoading ? (
-          <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+          <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--text-4)' }} />
         ) : hostels?.map((h: any) => (
           <button key={h.id} onClick={() => setSelectedHostel(h.id)}
-            className={cn('px-4 py-2 rounded-xl text-sm font-medium border transition flex items-center gap-2',
-              selectedHostel === h.id ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50')}>
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition"
+            style={selectedHostel === h.id
+              ? { background: 'var(--brand)', color: '#fff', borderColor: 'var(--brand)' }
+              : { background: 'var(--surface)', color: 'var(--text-2)', borderColor: 'var(--border)' }}>
             <Home className="w-4 h-4" />
             {h.name}
-            <span className={cn('text-xs px-1.5 py-0.5 rounded-full', selectedHostel === h.id ? 'bg-blue-500' : 'bg-gray-100')}>
+            <span className="text-xs px-1.5 py-0.5 rounded-full"
+              style={selectedHostel === h.id
+                ? { background: 'rgba(255,255,255,0.2)' }
+                : { background: 'var(--surface-2)' }}>
               {h.type}
             </span>
           </button>
@@ -154,11 +165,13 @@ export default function HostelPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--surface-2)' }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition',
-              tab === t.id ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition"
+            style={tab === t.id
+              ? { background: 'var(--surface)', color: 'var(--text-1)', boxShadow: '0 1px 3px rgba(0,0,0,.08)' }
+              : { color: 'var(--text-3)' }}>
             <t.icon className="w-4 h-4" />
             {t.label}
           </button>
@@ -168,49 +181,53 @@ export default function HostelPage() {
       {/* ── ROOMS ───────────────────────────────────────────────────────────── */}
       {tab === 'rooms' && (
         !selectedHostel ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-400">
+          <div className="card p-12 text-center" style={{ color: 'var(--text-4)' }}>
             <Home className="w-12 h-12 mx-auto mb-3 opacity-20" />
             Select a hostel above to view rooms
           </div>
         ) : roomsLoading ? (
-          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--text-4)' }} /></div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {rooms?.map((room: any) => (
-              <div key={room.id} className={cn(
-                'bg-white rounded-xl border p-4 shadow-sm hover:shadow-md transition cursor-pointer',
-                room.availableBeds === 0 ? 'border-red-200 bg-red-50/30' : 'border-gray-100'
-              )}>
+              <div key={room.id} className="rounded-xl border p-4 shadow-sm hover:shadow-md transition cursor-pointer"
+                style={{
+                  background: room.availableBeds === 0 ? 'var(--danger-bg)' : 'var(--surface)',
+                  borderColor: room.availableBeds === 0 ? 'var(--danger)' : 'var(--border)',
+                }}>
                 <div className="flex items-start justify-between mb-2">
-                  <span className="font-bold text-gray-900 text-lg">{room.roomNumber}</span>
-                  <span className={cn('text-xs px-2 py-0.5 rounded-full capitalize',
-                    room.roomType === 'ac' ? 'bg-blue-100 text-blue-700' :
-                    room.roomType === 'deluxe' ? 'bg-purple-100 text-purple-700' :
-                    'bg-gray-100 text-gray-600')}>
+                  <span className="font-bold text-lg" style={{ color: 'var(--text-1)' }}>{room.roomNumber}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full capitalize"
+                    style={room.roomType === 'ac'
+                      ? { background: 'var(--brand-bg)', color: 'var(--brand)' }
+                      : room.roomType === 'deluxe'
+                      ? { background: 'var(--surface-2)', color: 'var(--text-2)' }
+                      : { background: 'var(--surface-2)', color: 'var(--text-3)' }}>
                     {room.roomType}
                   </span>
                 </div>
-                {room.floor && <p className="text-xs text-gray-400 mb-2">Floor {room.floor}</p>}
+                {room.floor && <p className="text-xs mb-2" style={{ color: 'var(--text-4)' }}>Floor {room.floor}</p>}
                 {/* Bed occupancy bar */}
                 <div className="flex gap-1 mb-2">
                   {Array.from({ length: room.capacity }).map((_, i) => (
-                    <div key={i} className={cn('flex-1 h-2 rounded-full',
-                      i < room.occupiedBeds ? 'bg-blue-500' : 'bg-gray-200')} />
+                    <div key={i} className="flex-1 h-2 rounded-full"
+                      style={{ background: i < room.occupiedBeds ? 'var(--brand)' : 'var(--surface-2)' }} />
                   ))}
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500">{room.occupiedBeds}/{room.capacity} beds</span>
-                  <span className={cn('font-medium', room.availableBeds === 0 ? 'text-red-500' : 'text-green-600')}>
+                  <span style={{ color: 'var(--text-3)' }}>{room.occupiedBeds}/{room.capacity} beds</span>
+                  <span className="font-medium"
+                    style={{ color: room.availableBeds === 0 ? 'var(--danger)' : 'var(--success)' }}>
                     {room.availableBeds === 0 ? 'Full' : `${room.availableBeds} free`}
                   </span>
                 </div>
                 {room.feeMonthly > 0 && (
-                  <p className="text-xs text-blue-600 mt-1">₹{room.feeMonthly}/month</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--brand)' }}>₹{room.feeMonthly}/month</p>
                 )}
               </div>
             ))}
             {!rooms?.length && (
-              <div className="col-span-5 py-10 text-center text-gray-400">No rooms added to this hostel</div>
+              <div className="col-span-5 py-10 text-center" style={{ color: 'var(--text-4)' }}>No rooms added to this hostel</div>
             )}
           </div>
         )
@@ -218,42 +235,42 @@ export default function HostelPage() {
 
       {/* ── ALLOCATIONS ─────────────────────────────────────────────────────── */}
       {tab === 'allocations' && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="card overflow-hidden p-0">
           {allocLoading ? (
-            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--text-4)' }} /></div>
           ) : (
             <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px]">
-              <thead className="bg-gray-50">
-                <tr>
-                  {['Student ID', 'Hostel', 'Room', 'Bed', 'Allocated On', 'Fee/Month', 'Action'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {allocations?.map((a: any) => (
-                  <tr key={a.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-mono text-gray-600">{a.studentId.slice(0, 8)}...</td>
-                    <td className="px-4 py-3 text-sm text-gray-800">{a.hostelName}</td>
-                    <td className="px-4 py-3 text-sm font-medium">{a.roomNumber}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{a.bedNumber ?? '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{formatDate(a.allocatedOn)}</td>
-                    <td className="px-4 py-3 text-sm text-blue-600">₹{a.feeMonthly}</td>
-                    <td className="px-4 py-3">
-                      <button onClick={() => vacateMutation.mutate(a.id)}
-                        disabled={vacateMutation.isPending}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100">
-                        <LogOut className="w-3.5 h-3.5" /> Vacate
-                      </button>
-                    </td>
+              <table className="w-full min-w-[600px]">
+                <thead>
+                  <tr>
+                    {['Student ID', 'Hostel', 'Room', 'Bed', 'Allocated On', 'Fee/Month', 'Action'].map(h => (
+                      <th key={h} className="table-header">{h}</th>
+                    ))}
                   </tr>
-                ))}
-                {!allocations?.length && (
-                  <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-400">No active allocations</td></tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {allocations?.map((a: any) => (
+                    <tr key={a.id} className="table-row-hover">
+                      <td className="table-cell font-mono" style={{ color: 'var(--text-2)' }}>{a.studentId.slice(0, 8)}...</td>
+                      <td className="table-cell" style={{ color: 'var(--text-1)' }}>{a.hostelName}</td>
+                      <td className="table-cell font-medium" style={{ color: 'var(--text-1)' }}>{a.roomNumber}</td>
+                      <td className="table-cell" style={{ color: 'var(--text-2)' }}>{a.bedNumber ?? '-'}</td>
+                      <td className="table-cell" style={{ color: 'var(--text-2)' }}>{formatDate(a.allocatedOn)}</td>
+                      <td className="table-cell" style={{ color: 'var(--brand)' }}>₹{a.feeMonthly}</td>
+                      <td className="table-cell">
+                        <button onClick={() => vacateMutation.mutate(a.id)}
+                          disabled={vacateMutation.isPending}
+                          className="btn btn-danger text-xs px-2.5 py-1.5">
+                          <LogOut className="w-3.5 h-3.5" /> Vacate
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {!allocations?.length && (
+                    <tr><td colSpan={7} className="px-4 py-12 text-center" style={{ color: 'var(--text-4)' }}>No active allocations</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -261,43 +278,44 @@ export default function HostelPage() {
 
       {/* ── VISITORS ────────────────────────────────────────────────────────── */}
       {tab === 'visitors' && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="card overflow-hidden p-0">
           {visitorsLoading ? (
-            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--text-4)' }} /></div>
           ) : (
             <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px]">
-              <thead className="bg-gray-50">
-                <tr>
-                  {['Visitor', 'Phone', 'Relation', 'Purpose', 'Check In', 'ID Proof', 'Action'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {visitors?.items?.map((v: any) => (
-                  <tr key={v.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{v.visitorName}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{v.visitorPhone ?? '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 capitalize">{v.relation ?? '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{v.purpose ?? '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{formatDate(v.checkIn)}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{v.idProofType}: {v.idProofNumber ?? '-'}</td>
-                    <td className="px-4 py-3">
-                      {!v.checkOut && (
-                        <button onClick={() => checkoutMutation.mutate(v.id)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-green-50 text-green-700 rounded-lg hover:bg-green-100">
-                          <LogOut className="w-3.5 h-3.5" /> Check Out
-                        </button>
-                      )}
-                    </td>
+              <table className="w-full min-w-[600px]">
+                <thead>
+                  <tr>
+                    {['Visitor', 'Phone', 'Relation', 'Purpose', 'Check In', 'ID Proof', 'Action'].map(h => (
+                      <th key={h} className="table-header">{h}</th>
+                    ))}
                   </tr>
-                ))}
-                {!visitors?.items?.length && (
-                  <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-400">No visitors inside</td></tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {visitors?.items?.map((v: any) => (
+                    <tr key={v.id} className="table-row-hover">
+                      <td className="table-cell font-medium" style={{ color: 'var(--text-1)' }}>{v.visitorName}</td>
+                      <td className="table-cell" style={{ color: 'var(--text-2)' }}>{v.visitorPhone ?? '-'}</td>
+                      <td className="table-cell capitalize" style={{ color: 'var(--text-2)' }}>{v.relation ?? '-'}</td>
+                      <td className="table-cell" style={{ color: 'var(--text-2)' }}>{v.purpose ?? '-'}</td>
+                      <td className="table-cell" style={{ color: 'var(--text-2)' }}>{formatDate(v.checkIn)}</td>
+                      <td className="table-cell text-xs" style={{ color: 'var(--text-3)' }}>{v.idProofType}: {v.idProofNumber ?? '-'}</td>
+                      <td className="table-cell">
+                        {!v.checkOut && (
+                          <button onClick={() => checkoutMutation.mutate(v.id)}
+                            className="btn btn-ghost text-xs px-2.5 py-1.5 flex items-center gap-1"
+                            style={{ color: 'var(--success)' }}>
+                            <LogOut className="w-3.5 h-3.5" /> Check Out
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {!visitors?.items?.length && (
+                    <tr><td colSpan={7} className="px-4 py-12 text-center" style={{ color: 'var(--text-4)' }}>No visitors inside</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -307,36 +325,43 @@ export default function HostelPage() {
       {tab === 'complaints' && (
         <div className="space-y-3">
           {complaintsLoading ? (
-            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--text-4)' }} /></div>
           ) : complaints?.map((c: any) => (
-            <div key={c.id} className={cn('bg-white rounded-xl border shadow-sm p-4',
-              c.status === 'open' ? 'border-red-100' :
-              c.status === 'in-progress' ? 'border-yellow-100' : 'border-green-100')}>
+            <div key={c.id} className="rounded-xl border shadow-sm p-4"
+              style={{
+                background: 'var(--surface)',
+                borderColor: c.status === 'open' ? 'var(--danger)' :
+                  c.status === 'in-progress' ? 'var(--warning)' : 'var(--success)',
+              }}>
               <div className="flex items-start gap-3">
-                <div className={cn('p-2 rounded-lg flex-shrink-0',
-                  c.status === 'open' ? 'bg-red-50' :
-                  c.status === 'in-progress' ? 'bg-yellow-50' : 'bg-green-50')}>
-                  <AlertCircle className={cn('w-4 h-4',
-                    c.status === 'open' ? 'text-red-500' :
-                    c.status === 'in-progress' ? 'text-yellow-600' : 'text-green-500')} />
+                <div className="p-2 rounded-lg flex-shrink-0"
+                  style={{
+                    background: c.status === 'open' ? 'var(--danger-bg)' :
+                      c.status === 'in-progress' ? 'var(--warning-bg)' : 'var(--success-bg)',
+                  }}>
+                  <AlertCircle className="w-4 h-4"
+                    style={{
+                      color: c.status === 'open' ? 'var(--danger)' :
+                        c.status === 'in-progress' ? 'var(--warning)' : 'var(--success)',
+                    }} />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium capitalize text-gray-500">{c.category}</span>
+                    <span className="text-xs font-medium capitalize" style={{ color: 'var(--text-3)' }}>{c.category}</span>
                     <span className={cn('text-xs px-2 py-0.5 rounded-full capitalize',
-                      c.status === 'open' ? 'bg-red-100 text-red-700' :
-                      c.status === 'in-progress' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700')}>
+                      c.status === 'open' ? 'badge-draft' :
+                      c.status === 'in-progress' ? 'badge-pending' : 'badge-active')}>
                       {c.status}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-800 mt-1">{c.description}</p>
-                  {c.resolution && <p className="text-xs text-green-700 mt-1 italic">Resolution: {c.resolution}</p>}
-                  <p className="text-xs text-gray-400 mt-1">{formatDate(c.createdAt)}</p>
+                  <p className="text-sm mt-1" style={{ color: 'var(--text-1)' }}>{c.description}</p>
+                  {c.resolution && <p className="text-xs italic mt-1" style={{ color: 'var(--success)' }}>Resolution: {c.resolution}</p>}
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-4)' }}>{formatDate(c.createdAt)}</p>
                 </div>
                 {c.status !== 'resolved' && (
                   <button
                     onClick={() => resolveComplaintMutation.mutate({ id: c.id, resolution: 'Issue addressed and resolved.' })}
-                    className="flex-shrink-0 px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    className="btn btn-primary flex-shrink-0 text-xs px-3 py-1.5">
                     Resolve
                   </button>
                 )}
@@ -344,65 +369,74 @@ export default function HostelPage() {
             </div>
           ))}
           {!complaints?.length && !complaintsLoading && (
-            <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-400">No complaints</div>
+            <div className="card p-12 text-center" style={{ color: 'var(--text-4)' }}>No complaints</div>
           )}
         </div>
       )}
 
       {/* Add Hostel Modal */}
-      {showAddHostel && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="text-lg font-semibold mb-4">Add Hostel</h3>
-            <div className="space-y-3">
+      {showAddHostel && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(8px)' }}>
+          <div className="w-full max-w-md rounded-2xl overflow-hidden"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 25px 60px rgba(0,0,0,.3)' }}>
+            <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--text-1)' }}>Add Hostel</h3>
+            </div>
+            <div className="px-6 py-5 space-y-3">
               {[
                 { label: 'Name', key: 'name', placeholder: 'e.g. Boys Hostel Block A' },
                 { label: 'Warden Name', key: 'warden', placeholder: 'Full name' },
                 { label: 'Warden Phone', key: 'wardenPhone', placeholder: '9876543210' },
               ].map(f => (
                 <div key={f.key}>
-                  <label className="text-sm font-medium text-gray-700">{f.label}</label>
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>{f.label}</label>
                   <input value={(hostelForm as any)[f.key]}
                     onChange={e => setHostelForm(p => ({ ...p, [f.key]: e.target.value }))}
                     placeholder={f.placeholder}
-                    className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                    className={`mt-1 ${inputCls}`} />
                 </div>
               ))}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Type</label>
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Type</label>
                   <select value={hostelForm.type} onChange={e => setHostelForm(p => ({ ...p, type: e.target.value }))}
-                    className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                    className={`mt-1 ${inputCls}`}>
                     {['boys', 'girls', 'mixed'].map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Total Rooms</label>
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Total Rooms</label>
                   <input type="number" value={hostelForm.totalRooms}
                     onChange={e => setHostelForm(p => ({ ...p, totalRooms: Number(e.target.value) }))}
-                    className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                    className={`mt-1 ${inputCls}`} />
                 </div>
               </div>
             </div>
-            <div className="flex gap-2 mt-5">
+            <div className="flex gap-2 px-6 py-4" style={{ borderTop: '1px solid var(--border)' }}>
               <button onClick={() => { setShowAddHostel(false); setHostelForm({ name: '', type: 'boys', warden: '', wardenPhone: '', totalRooms: 20 }) }}
-                className="flex-1 py-2 border border-gray-200 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
+                className="btn btn-ghost flex-1">Cancel</button>
               <button onClick={() => addHostelMutation.mutate()}
                 disabled={addHostelMutation.isPending || !hostelForm.name}
-                className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-60">
+                className="btn btn-primary flex-1">
                 {addHostelMutation.isPending ? 'Creating...' : 'Create'}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Check In Visitor Modal */}
-      {showCheckin && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="text-lg font-semibold mb-4">Check In Visitor</h3>
-            <div className="space-y-3">
+      {showCheckin && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(8px)' }}>
+          <div className="w-full max-w-md rounded-2xl overflow-hidden"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 25px 60px rgba(0,0,0,.3)' }}>
+            <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--text-1)' }}>Check In Visitor</h3>
+            </div>
+            <div className="px-6 py-5 space-y-3">
               {[
                 { label: 'Student ID (UUID)', key: 'studentId', placeholder: 'Student ID' },
                 { label: 'Visitor Name', key: 'visitorName', placeholder: 'Full name' },
@@ -412,25 +446,26 @@ export default function HostelPage() {
                 { label: 'ID Proof Number', key: 'idProofNumber', placeholder: 'Aadhaar / PAN number' },
               ].map(f => (
                 <div key={f.key}>
-                  <label className="text-sm font-medium text-gray-700">{f.label}</label>
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>{f.label}</label>
                   <input value={(checkinForm as any)[f.key]}
                     onChange={e => setCheckinForm(p => ({ ...p, [f.key]: e.target.value }))}
                     placeholder={f.placeholder}
-                    className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                    className={`mt-1 ${inputCls}`} />
                 </div>
               ))}
             </div>
-            <div className="flex gap-2 mt-5">
+            <div className="flex gap-2 px-6 py-4" style={{ borderTop: '1px solid var(--border)' }}>
               <button onClick={() => { setShowCheckin(false); setCheckinForm({ studentId: '', visitorName: '', visitorPhone: '', relation: '', purpose: '', idProofType: 'Aadhaar', idProofNumber: '' }) }}
-                className="flex-1 py-2 border border-gray-200 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
+                className="btn btn-ghost flex-1">Cancel</button>
               <button onClick={() => checkinMutation.mutate()}
                 disabled={checkinMutation.isPending || !checkinForm.visitorName}
-                className="flex-1 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 disabled:opacity-60">
+                className="btn btn-primary flex-1">
                 {checkinMutation.isPending ? 'Checking in...' : 'Check In'}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

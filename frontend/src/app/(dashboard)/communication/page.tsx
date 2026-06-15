@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { communicationApi } from '@/lib/api'
 import { formatDate, cn } from '@/lib/utils'
@@ -48,11 +49,13 @@ export default function CommunicationPage() {
       setAnnouncementForm({ title: '', content: '', audience: 'all', channels: ['app'], isPinned: false })
       qc.invalidateQueries({ queryKey: ['announcements'] })
     },
+    onError: () => toast.error('Failed to post announcement'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => communicationApi.deleteAnnouncement(id),
     onSuccess: () => { toast.success('Deleted'); qc.invalidateQueries({ queryKey: ['announcements'] }) },
+    onError: () => toast.error('Failed to delete announcement'),
   })
 
   const smsMutation = useMutation({
@@ -62,6 +65,7 @@ export default function CommunicationPage() {
       setSmsForm(p => ({ ...p, message: '' }))
       qc.invalidateQueries({ queryKey: ['notification-logs'] })
     },
+    onError: () => toast.error('Failed to send SMS'),
   })
 
   const emailMutation = useMutation({
@@ -74,6 +78,7 @@ export default function CommunicationPage() {
       toast.success('Emails sent')
       setEmailForm({ recipients: '', subject: '', body: '' })
     },
+    onError: () => toast.error('Failed to send email'),
   })
 
   const toggleChannel = (ch: string) =>
@@ -83,26 +88,28 @@ export default function CommunicationPage() {
     }))
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 anim-fade-up">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Communication</h1>
-          <p className="text-gray-500 text-sm">Send messages, announcements and notifications</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-1)' }}>Communication</h1>
+          <p className="text-sm" style={{ color: 'var(--text-3)' }}>Send messages, announcements and notifications</p>
         </div>
         {tab === 'announcements' && (
           <button onClick={() => setShowNew(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+            className="btn btn-primary flex items-center gap-2">
             <Plus className="w-4 h-4" /> New Announcement
           </button>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ background: 'var(--surface-2)' }}>
         {(['announcements', 'sms', 'email', 'logs'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={cn('px-4 py-2 rounded-md text-sm font-medium capitalize transition',
-              tab === t ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
+            className="px-4 py-2 rounded-md text-sm font-medium capitalize transition"
+            style={tab === t
+              ? { background: 'var(--surface)', color: 'var(--text-1)', boxShadow: '0 1px 3px rgba(0,0,0,.08)' }
+              : { color: 'var(--text-3)' }}>
             {t}
           </button>
         ))}
@@ -112,42 +119,49 @@ export default function CommunicationPage() {
       {tab === 'announcements' && (
         <div className="space-y-3">
           {annLoading ? (
-            <div className="bg-white rounded-xl p-8 text-center"><Loader2 className="w-6 h-6 animate-spin text-gray-400 mx-auto" /></div>
+            <div className="card p-8 text-center">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto" style={{ color: 'var(--text-4)' }} />
+            </div>
           ) : announcements?.items?.length ? (
             announcements.items.map((a: any) => (
-              <div key={a.id} className={cn('bg-white rounded-xl p-5 shadow-sm border', a.isPinned ? 'border-blue-200' : 'border-gray-100')}>
+              <div key={a.id} className="card p-5"
+                style={a.isPinned ? { borderColor: 'var(--brand)' } : undefined}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      {a.isPinned && <Pin className="w-3.5 h-3.5 text-blue-500" />}
-                      <h3 className="font-semibold text-gray-900">{a.title}</h3>
-                      <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full capitalize">{a.audience}</span>
+                      {a.isPinned && <Pin className="w-3.5 h-3.5" style={{ color: 'var(--brand)' }} />}
+                      <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>{a.title}</h3>
+                      <span className="text-xs px-2 py-0.5 rounded-full capitalize"
+                        style={{ background: 'var(--surface-2)', color: 'var(--text-2)' }}>{a.audience}</span>
                     </div>
-                    <p className="text-sm text-gray-600 line-clamp-2">{a.content}</p>
+                    <p className="text-sm line-clamp-2" style={{ color: 'var(--text-2)' }}>{a.content}</p>
                     <div className="flex items-center gap-3 mt-2">
-                      <p className="text-xs text-gray-400">{formatDate(a.publishAt)}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-4)' }}>{formatDate(a.publishAt)}</p>
                       <div className="flex gap-1">
                         {a.channels?.map((ch: string) => {
                           const Icon = CHANNEL_ICONS[ch] ?? Bell
-                          return <Icon key={ch} className="w-3.5 h-3.5 text-gray-400" />
+                          return <Icon key={ch} className="w-3.5 h-3.5" style={{ color: 'var(--text-4)' }} />
                         })}
                       </div>
                     </div>
                   </div>
                   <button onClick={() => deleteMutation.mutate(a.id)}
-                    className="p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500">
+                    className="p-1.5 rounded-lg transition-colors"
+                    style={{ color: 'var(--text-3)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--danger)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--danger-bg)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-3)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}>
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             ))
           ) : (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-              <Bell className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-              <p className="text-sm font-medium text-gray-500">No announcements yet</p>
-              <p className="text-xs text-gray-400 mt-1">Create your first announcement to notify students and parents</p>
+            <div className="card p-12 text-center">
+              <Bell className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--text-4)' }} />
+              <p className="text-sm font-medium" style={{ color: 'var(--text-3)' }}>No announcements yet</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-4)' }}>Create your first announcement to notify students and parents</p>
               <button onClick={() => setShowNew(true)}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 inline-flex items-center gap-2">
+                className="btn btn-primary mt-4 inline-flex items-center gap-2">
                 <Plus className="w-4 h-4" /> Create Announcement
               </button>
             </div>
@@ -158,40 +172,40 @@ export default function CommunicationPage() {
       {/* SMS */}
       {tab === 'sms' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-4">
-            <h3 className="font-semibold text-gray-800">Send SMS Blast</h3>
+          <div className="card p-5 space-y-4">
+            <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>Send SMS Blast</h3>
             <div>
-              <label className="text-sm font-medium text-gray-700">Audience</label>
+              <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Audience</label>
               <select value={smsForm.audience} onChange={e => setSmsForm(p => ({ ...p, audience: e.target.value }))}
-                className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                className="mt-1 input-base focus-ring w-full">
                 {AUDIENCES.map(a => <option key={a} className="capitalize">{a}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Message</label>
+              <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Message</label>
               <textarea
                 value={smsForm.message}
                 onChange={e => setSmsForm(p => ({ ...p, message: e.target.value }))}
                 rows={5}
                 maxLength={160}
                 placeholder="Type your SMS message (max 160 chars)..."
-                className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="mt-1 input-base focus-ring w-full resize-none"
               />
-              <p className="text-xs text-gray-400 mt-1">{smsForm.message.length}/160 characters</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-4)' }}>{smsForm.message.length}/160 characters</p>
             </div>
             <button
               onClick={() => smsMutation.mutate()}
               disabled={smsMutation.isPending || !smsForm.message}
-              className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60 flex items-center justify-center gap-2"
+              className="btn btn-primary w-full flex items-center justify-center gap-2"
             >
               {smsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Send SMS
             </button>
           </div>
 
-          <div className="bg-gray-50 rounded-xl p-5 space-y-3">
-            <h3 className="font-semibold text-gray-700 text-sm">SMS Tips</h3>
-            <ul className="text-sm text-gray-500 space-y-2">
+          <div className="rounded-xl p-5 space-y-3" style={{ background: 'var(--surface-2)' }}>
+            <h3 className="font-semibold text-sm" style={{ color: 'var(--text-2)' }}>SMS Tips</h3>
+            <ul className="text-sm space-y-2" style={{ color: 'var(--text-3)' }}>
               <li>• Keep messages under 160 characters for single SMS</li>
               <li>• Use "all" to reach all guardians and staff</li>
               <li>• Messages go to primary guardian contacts</li>
@@ -203,40 +217,40 @@ export default function CommunicationPage() {
 
       {/* Email */}
       {tab === 'email' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 max-w-2xl space-y-4">
-          <h3 className="font-semibold text-gray-800">Send Email</h3>
+        <div className="card p-5 max-w-2xl space-y-4">
+          <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>Send Email</h3>
           <div>
-            <label className="text-sm font-medium text-gray-700">Recipients (comma-separated emails)</label>
+            <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Recipients (comma-separated emails)</label>
             <input
               value={emailForm.recipients}
               onChange={e => setEmailForm(p => ({ ...p, recipients: e.target.value }))}
               placeholder="email1@school.com, email2@school.com"
-              className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+              className="mt-1 input-base focus-ring w-full"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Subject</label>
+            <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Subject</label>
             <input
               value={emailForm.subject}
               onChange={e => setEmailForm(p => ({ ...p, subject: e.target.value }))}
               placeholder="Email subject"
-              className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+              className="mt-1 input-base focus-ring w-full"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Body (HTML supported)</label>
+            <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Body (HTML supported)</label>
             <textarea
               value={emailForm.body}
               onChange={e => setEmailForm(p => ({ ...p, body: e.target.value }))}
               rows={8}
               placeholder="Email body..."
-              className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono"
+              className="mt-1 input-base focus-ring w-full resize-none font-mono"
             />
           </div>
           <button
             onClick={() => emailMutation.mutate()}
             disabled={emailMutation.isPending || !emailForm.recipients || !emailForm.subject}
-            className="py-2.5 px-6 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60 flex items-center gap-2"
+            className="btn btn-primary flex items-center gap-2"
           >
             {emailMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             Send Email
@@ -246,81 +260,87 @@ export default function CommunicationPage() {
 
       {/* Logs */}
       {tab === 'logs' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="card overflow-hidden">
           {logsLoading ? (
-            <div className="flex items-center justify-center h-48"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+            <div className="flex items-center justify-center h-48">
+              <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--text-4)' }} />
+            </div>
           ) : (
             <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px]">
-              <thead className="bg-gray-50">
-                <tr>
-                  {['Channel', 'Recipient', 'Subject / Body', 'Status', 'Sent At'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {logs?.items?.map((log: any) => {
-                  const Icon = CHANNEL_ICONS[log.channel] ?? Bell
-                  return (
-                    <tr key={log.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm capitalize">{log.channel}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 font-mono">{log.recipient}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
-                        {log.subject ?? log.body.slice(0, 60)}...
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={cn('text-xs px-2 py-1 rounded-full font-medium',
-                          log.status === 'sent' ? 'bg-green-100 text-green-700' :
-                          log.status === 'failed' ? 'bg-red-100 text-red-700' :
-                          'bg-yellow-100 text-yellow-700')}>
-                          {log.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-400">{log.sentAt ? formatDate(log.sentAt) : '-'}</td>
+              <table className="w-full min-w-[600px]">
+                <thead>
+                  <tr>
+                    {['Channel', 'Recipient', 'Subject / Body', 'Status', 'Sent At'].map(h => (
+                      <th key={h} className="table-header">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs?.items?.map((log: any) => {
+                    const Icon = CHANNEL_ICONS[log.channel] ?? Bell
+                    return (
+                      <tr key={log.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td className="table-cell">
+                          <div className="flex items-center gap-2">
+                            <Icon className="w-4 h-4" style={{ color: 'var(--text-4)' }} />
+                            <span className="text-sm capitalize" style={{ color: 'var(--text-1)' }}>{log.channel}</span>
+                          </div>
+                        </td>
+                        <td className="table-cell font-mono" style={{ color: 'var(--text-2)' }}>{log.recipient}</td>
+                        <td className="table-cell max-w-xs truncate" style={{ color: 'var(--text-2)' }}>
+                          {log.subject ?? log.body.slice(0, 60)}...
+                        </td>
+                        <td className="table-cell">
+                          <span className={cn('text-xs px-2 py-1 rounded-full font-medium',
+                            log.status === 'sent' ? 'badge-active' :
+                            log.status === 'failed' ? 'badge-inactive' :
+                            'badge-pending')}>
+                            {log.status}
+                          </span>
+                        </td>
+                        <td className="table-cell" style={{ color: 'var(--text-4)' }}>{log.sentAt ? formatDate(log.sentAt) : '-'}</td>
+                      </tr>
+                    )
+                  })}
+                  {!logs?.items?.length && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-12 text-center" style={{ color: 'var(--text-4)' }}>No notification logs</td>
                     </tr>
-                  )
-                })}
-                {!logs?.items?.length && (
-                  <tr><td colSpan={5} className="px-4 py-12 text-center text-gray-400">No notification logs</td></tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
       )}
 
       {/* New announcement modal */}
-      {showNew && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
-            <h3 className="text-lg font-semibold mb-4">New Announcement</h3>
+      {showNew && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(8px)' }}>
+          <div className="w-full max-w-lg rounded-2xl p-6"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 25px 60px rgba(0,0,0,.3)' }}>
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-1)' }}>New Announcement</h3>
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium text-gray-700">Title</label>
+                <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Title</label>
                 <input value={announcementForm.title}
                   onChange={e => setAnnouncementForm(p => ({ ...p, title: e.target.value }))}
-                  className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="mt-1 input-base focus-ring w-full" />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">Content</label>
+                <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Content</label>
                 <textarea value={announcementForm.content}
                   onChange={e => setAnnouncementForm(p => ({ ...p, content: e.target.value }))}
                   rows={4}
-                  className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                  className="mt-1 input-base focus-ring w-full resize-none" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Audience</label>
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Audience</label>
                   <select value={announcementForm.audience}
                     onChange={e => setAnnouncementForm(p => ({ ...p, audience: e.target.value }))}
-                    className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                    className="mt-1 input-base focus-ring w-full">
                     {AUDIENCES.map(a => <option key={a} className="capitalize">{a}</option>)}
                   </select>
                 </div>
@@ -329,19 +349,19 @@ export default function CommunicationPage() {
                     <input type="checkbox" checked={announcementForm.isPinned}
                       onChange={e => setAnnouncementForm(p => ({ ...p, isPinned: e.target.checked }))}
                       className="w-4 h-4 rounded" />
-                    <span className="text-sm font-medium text-gray-700">Pin announcement</span>
+                    <span className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>Pin announcement</span>
                   </label>
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Send via</label>
+                <label className="text-sm font-medium mb-2 block" style={{ color: 'var(--text-2)' }}>Send via</label>
                 <div className="flex gap-2 flex-wrap">
                   {CHANNELS.map(ch => (
                     <button key={ch} type="button" onClick={() => toggleChannel(ch)}
-                      className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border capitalize transition',
-                        announcementForm.channels.includes(ch)
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'border-gray-200 text-gray-600 hover:bg-gray-50')}>
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium border capitalize transition"
+                      style={announcementForm.channels.includes(ch)
+                        ? { background: 'var(--brand)', color: '#fff', borderColor: 'var(--brand)' }
+                        : { background: 'transparent', color: 'var(--text-2)', borderColor: 'var(--border)' }}>
                       {ch}
                     </button>
                   ))}
@@ -350,16 +370,17 @@ export default function CommunicationPage() {
             </div>
             <div className="flex gap-2 mt-5">
               <button onClick={() => setShowNew(false)}
-                className="flex-1 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+                className="btn btn-ghost flex-1">Cancel</button>
               <button onClick={() => createMutation.mutate()}
                 disabled={createMutation.isPending || !announcementForm.title || !announcementForm.content}
-                className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-60 flex items-center justify-center gap-2">
+                className="btn btn-primary flex-1 flex items-center justify-center gap-2">
                 {createMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 Post
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

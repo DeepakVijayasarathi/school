@@ -140,7 +140,11 @@ public record StudentQueryParams(
     Guid? SectionId = null,
     string? Status = null,
     Guid? AcademicYearId = null
-);
+)
+{
+    public int SafePage => Math.Max(1, Page);
+    public int SafePageSize => Math.Clamp(PageSize, 1, 100);
+};
 
 public record PromoteStudentsRequest(
     [Required] Guid FromAcademicYearId,

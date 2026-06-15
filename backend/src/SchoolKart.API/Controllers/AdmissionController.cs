@@ -147,8 +147,9 @@ public class AdmissionController(AppDbContext db, ITenantContext tenant) : Contr
             .FirstOrDefaultAsync(ct);
 
         var year = DateTime.UtcNow.Year.ToString()[2..];
-        var seq = lastApp is null ? 1 : int.Parse(lastApp.ApplicationNumber.Split('/').Last()) + 1;
-        var appNumber = $"APP/{year}/{seq:D5}";
+        var lastSeq = lastApp is null ? 0
+            : int.TryParse(lastApp.ApplicationNumber.Split('/').LastOrDefault(), out var n) ? n : 0;
+        var appNumber = $"APP/{year}/{lastSeq + 1:D5}";
 
         var application = new AdmissionApplication
         {
@@ -337,8 +338,9 @@ public class AdmissionController(AppDbContext db, ITenantContext tenant) : Contr
         var lastStudent = await db.Students.Where(s => s.TenantId == tenant.TenantId)
             .OrderByDescending(s => s.CreatedAt).FirstOrDefaultAsync(ct);
         var year = DateTime.UtcNow.Year.ToString()[2..];
-        var seq = lastStudent is null ? 1 : int.Parse(lastStudent.AdmissionNumber.Split('/').Last()) + 1;
-        var admissionNumber = $"ADM/{year}/{seq:D4}";
+        var lastSeq = lastStudent is null ? 0
+            : int.TryParse(lastStudent.AdmissionNumber.Split('/').LastOrDefault(), out var n) ? n : 0;
+        var admissionNumber = $"ADM/{year}/{lastSeq + 1:D4}";
 
         var admissionDate = req.AdmissionDate is not null
             ? DateOnly.Parse(req.AdmissionDate)
