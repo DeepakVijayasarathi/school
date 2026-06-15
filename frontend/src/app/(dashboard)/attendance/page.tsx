@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { attendanceApi, schoolApi } from '@/lib/api'
 import { formatDate, cn } from '@/lib/utils'
@@ -56,14 +56,17 @@ export default function AttendancePage() {
 
   const { data: records, isLoading } = useQuery({
     queryKey: ['attendance', sectionId, date],
-    queryFn: () => attendanceApi.getStudents(sectionId, date).then((r) => {
-      const att: Record<string, string> = {}
-      r.data.forEach((s: any) => { att[s.id] = s.status })
-      setAttendance(att)
-      return r.data
-    }),
+    queryFn: () => attendanceApi.getStudents(sectionId, date).then((r) => r.data),
     enabled: !!sectionId,
   })
+
+  useEffect(() => {
+    if (records) {
+      const att: Record<string, string> = {}
+      records.forEach((s: any) => { att[s.id] = s.status })
+      setAttendance(att)
+    }
+  }, [records])
 
   const saveMutation = useMutation({
     mutationFn: () =>

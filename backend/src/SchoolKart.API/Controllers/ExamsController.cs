@@ -131,14 +131,27 @@ public class ExamsController(AppDbContext db, ITenantContext tenant) : Controlle
 
         if (schedule is null) return NotFound();
 
+        // Batch-load all existing marks for this schedule to avoid N+1 queries
+        var incomingStudentIds = req.Marks.Select(m => m.StudentId).ToList();
+        var existingMarksMap = await db.Set<StudentMark>()
+            .Where(m => m.ExamScheduleId == scheduleId && incomingStudentIds.Contains(m.StudentId))
+            .ToDictionaryAsync(m => m.StudentId, ct);
+
+        var toAdd = new List<StudentMark>();
+
         foreach (var entry in req.Marks)
         {
-            var existing = await db.Set<StudentMark>()
-                .FirstOrDefaultAsync(m => m.ExamScheduleId == scheduleId && m.StudentId == entry.StudentId, ct);
-
-            if (existing is null)
+            if (existingMarksMap.TryGetValue(entry.StudentId, out var existing))
             {
-                db.Set<StudentMark>().Add(new StudentMark
+                existing.MarksObtained = entry.MarksObtained;
+                existing.IsAbsent = entry.IsAbsent;
+                existing.Remarks = entry.Remarks;
+                existing.EnteredBy = tenant.UserId;
+                existing.UpdatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                toAdd.Add(new StudentMark
                 {
                     TenantId = tenant.TenantId,
                     ExamScheduleId = scheduleId,
@@ -149,16 +162,9 @@ public class ExamsController(AppDbContext db, ITenantContext tenant) : Controlle
                     EnteredBy = tenant.UserId
                 });
             }
-            else
-            {
-                existing.MarksObtained = entry.MarksObtained;
-                existing.IsAbsent = entry.IsAbsent;
-                existing.Remarks = entry.Remarks;
-                existing.EnteredBy = tenant.UserId;
-                existing.UpdatedAt = DateTime.UtcNow;
-            }
         }
 
+        if (toAdd.Count > 0) db.Set<StudentMark>().AddRange(toAdd);
         await db.SaveChangesAsync(ct);
         return Ok();
     }

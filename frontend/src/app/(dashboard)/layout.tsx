@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import { Sidebar } from '@/components/layout/Sidebar'
-import { Bell, Search, ChevronRight, Command, Menu, Sparkles } from 'lucide-react'
+import { Bell, ChevronRight, Menu, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const PAGE_TITLES: Record<string, string> = {
@@ -163,25 +163,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             ))}
           </nav>
 
-          {/* Search trigger */}
-          <button
-            className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-[13px] transition-all group min-w-[140px] xl:min-w-[190px]"
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              color: 'var(--text-3)',
-              boxShadow: 'var(--shadow-xs)',
-            }}
-            aria-label="Search"
-          >
-            <Search className="w-3.5 h-3.5 flex-shrink-0 transition-colors group-hover:text-[var(--brand)]"
-              style={{ color: 'var(--text-4)' }} />
-            <span className="flex-1 text-left truncate">Search...</span>
-            <kbd className="hidden lg:flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium flex-shrink-0"
-              style={{ background: 'var(--surface-2)', color: 'var(--text-4)' }}>
-              <Command className="w-2.5 h-2.5" />K
-            </kbd>
-          </button>
 
           {/* Right actions */}
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -192,8 +173,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               aria-label="Notifications"
             >
               <Bell className="w-4 h-4" style={{ color: 'var(--text-2)' }} />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full ring-1 ring-white"
-                style={{ background: 'var(--danger)' }} aria-hidden="true" />
             </button>
 
             {/* Divider */}

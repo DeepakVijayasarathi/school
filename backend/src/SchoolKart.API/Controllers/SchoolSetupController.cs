@@ -32,6 +32,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPut("info")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> UpdateSchoolInfo([FromBody] UpdateSchoolInfoRequest req, CancellationToken ct)
     {
         var tenant_ = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenant.TenantId, ct);
@@ -65,6 +66,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPost("academic-years")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> CreateAcademicYear([FromBody] CreateAcademicYearRequest req, CancellationToken ct)
     {
         if (req.IsCurrent)
@@ -88,6 +90,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPut("academic-years/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> UpdateAcademicYear(Guid id, [FromBody] UpdateAcademicYearRequest req, CancellationToken ct)
     {
         var year = await db.AcademicYears.FirstOrDefaultAsync(a => a.Id == id && a.TenantId == tenant.TenantId, ct);
@@ -100,6 +103,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpDelete("academic-years/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> DeleteAcademicYear(Guid id, CancellationToken ct)
     {
         var year = await db.AcademicYears.FirstOrDefaultAsync(a => a.Id == id && a.TenantId == tenant.TenantId, ct);
@@ -110,6 +114,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPatch("academic-years/{id:guid}/set-current")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> SetCurrentYear(Guid id, CancellationToken ct)
     {
         await db.AcademicYears
@@ -137,6 +142,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPost("campuses")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> CreateCampus([FromBody] CreateCampusRequest req, CancellationToken ct)
     {
         var campus = new Campus
@@ -157,6 +163,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPut("campuses/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> UpdateCampus(Guid id, [FromBody] CreateCampusRequest req, CancellationToken ct)
     {
         var campus = await db.Campuses.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenant.TenantId, ct);
@@ -172,6 +179,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpDelete("campuses/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> DeleteCampus(Guid id, CancellationToken ct)
     {
         var campus = await db.Campuses.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenant.TenantId, ct);
@@ -201,6 +209,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPost("classes")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> CreateClass([FromBody] CreateClassRequest req, CancellationToken ct)
     {
         var cls = new Class
@@ -216,6 +225,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPut("classes/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> UpdateClass(Guid id, [FromBody] CreateClassRequest req, CancellationToken ct)
     {
         var cls = await db.Classes.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenant.TenantId, ct);
@@ -227,6 +237,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpDelete("classes/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> DeleteClass(Guid id, CancellationToken ct)
     {
         var cls = await db.Classes.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenant.TenantId, ct);
@@ -260,7 +271,6 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
                 s.ClassId,
                 ClassName = s.Class != null ? s.Class.Name : null,
                 s.RoomNumber,
-                s.MaxStrength,
                 capacity = s.MaxStrength,
                 ClassTeacher = s.ClassTeacher == null ? null : new { s.ClassTeacher.Id, s.ClassTeacher.FirstName, s.ClassTeacher.LastName }
             })
@@ -270,6 +280,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPost("sections")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> CreateSection([FromBody] CreateSectionRequest req, CancellationToken ct)
     {
         var section = new Section
@@ -288,6 +299,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPut("sections/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> UpdateSection(Guid id, [FromBody] UpdateSectionRequest req, CancellationToken ct)
     {
         var section = await db.Sections.FirstOrDefaultAsync(s => s.Id == id && s.TenantId == tenant.TenantId, ct);
@@ -300,6 +312,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpDelete("sections/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> DeleteSection(Guid id, CancellationToken ct)
     {
         var section = await db.Sections.FirstOrDefaultAsync(s => s.Id == id && s.TenantId == tenant.TenantId, ct);
@@ -324,6 +337,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPost("subjects")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> CreateSubject([FromBody] CreateSubjectRequest req, CancellationToken ct)
     {
         var subject = new Subject
@@ -338,6 +352,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPut("subjects/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> UpdateSubject(Guid id, [FromBody] CreateSubjectRequest req, CancellationToken ct)
     {
         var subject = await db.Subjects.FirstOrDefaultAsync(s => s.Id == id && s.TenantId == tenant.TenantId, ct);
@@ -349,6 +364,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpDelete("subjects/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> DeleteSubject(Guid id, CancellationToken ct)
     {
         var subject = await db.Subjects.FirstOrDefaultAsync(s => s.Id == id && s.TenantId == tenant.TenantId, ct);
@@ -372,6 +388,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPost("departments")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> CreateDepartment([FromBody] CreateDeptRequest req, CancellationToken ct)
     {
         var dept = new Department { TenantId = tenant.TenantId, Name = req.Name, Code = req.Code };
@@ -381,6 +398,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPut("departments/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> UpdateDepartment(Guid id, [FromBody] CreateDeptRequest req, CancellationToken ct)
     {
         var dept = await db.Set<Department>().FirstOrDefaultAsync(d => d.Id == id && d.TenantId == tenant.TenantId, ct);
@@ -392,6 +410,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpDelete("departments/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> DeleteDepartment(Guid id, CancellationToken ct)
     {
         var dept = await db.Set<Department>().FirstOrDefaultAsync(d => d.Id == id && d.TenantId == tenant.TenantId, ct);
@@ -415,6 +434,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPost("fee-types")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> CreateFeeType([FromBody] CreateFeeTypeRequest req, CancellationToken ct)
     {
         var cat = new FeeCategory { TenantId = tenant.TenantId, Name = req.Name, Code = req.Code };
@@ -424,6 +444,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpPut("fee-types/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> UpdateFeeType(Guid id, [FromBody] CreateFeeTypeRequest req, CancellationToken ct)
     {
         var cat = await db.Set<FeeCategory>().FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenant.TenantId, ct);
@@ -435,6 +456,7 @@ public class SchoolSetupController(AppDbContext db, ITenantContext tenant) : Con
     }
 
     [HttpDelete("fee-types/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> DeleteFeeType(Guid id, CancellationToken ct)
     {
         var cat = await db.Set<FeeCategory>().FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenant.TenantId, ct);

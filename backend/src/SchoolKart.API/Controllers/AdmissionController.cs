@@ -199,6 +199,7 @@ public class AdmissionController(AppDbContext db, ITenantContext tenant) : Contr
     }
 
     [HttpPatch("applications/{id:guid}/status")]
+    [Authorize(Roles = "school_admin,super_admin,receptionist")]
     public async Task<IActionResult> UpdateApplicationStatus(Guid id, [FromBody] UpdateStatusRequest req, CancellationToken ct)
     {
         var app = await db.Set<AdmissionApplication>()
@@ -335,12 +336,16 @@ public class AdmissionController(AppDbContext db, ITenantContext tenant) : Contr
         if (app.ConvertedStudentId.HasValue)
             return BadRequest("Application already converted to student.");
 
-        var lastStudent = await db.Students.Where(s => s.TenantId == tenant.TenantId)
-            .OrderByDescending(s => s.CreatedAt).FirstOrDefaultAsync(ct);
         var year = DateTime.UtcNow.Year.ToString()[2..];
-        var lastSeq = lastStudent is null ? 0
-            : int.TryParse(lastStudent.AdmissionNumber.Split('/').LastOrDefault(), out var n) ? n : 0;
-        var admissionNumber = $"ADM/{year}/{lastSeq + 1:D4}";
+        var prefix = $"ADM/{year}/";
+        var maxSeq = await db.Students
+            .Where(s => s.TenantId == tenant.TenantId && s.AdmissionNumber.StartsWith(prefix))
+            .Select(s => s.AdmissionNumber.Substring(prefix.Length))
+            .ToListAsync(ct);
+        var nextSeq = maxSeq
+            .Select(n => int.TryParse(n, out var v) ? v : 0)
+            .DefaultIfEmpty(0).Max() + 1;
+        var admissionNumber = $"ADM/{year}/{nextSeq:D4}";
 
         var admissionDate = req.AdmissionDate is not null
             ? DateOnly.Parse(req.AdmissionDate)

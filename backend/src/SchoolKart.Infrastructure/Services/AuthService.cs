@@ -174,8 +174,8 @@ public class AuthService(
         }, ct);
 
         var token = jwt.GenerateTempToken(user.Id, "pwd_reset");
-        // TODO: send OTP via email/SMS. For now returned in response.
-        return Result<ForgotPasswordResult>.Success(new ForgotPasswordResult(token, otp));
+        // TODO: send OTP via email/SMS. OTP is stored in cache only and not returned in the response.
+        return Result<ForgotPasswordResult>.Success(new ForgotPasswordResult(token));
     }
 
     public async Task<Result<bool>> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken ct = default)

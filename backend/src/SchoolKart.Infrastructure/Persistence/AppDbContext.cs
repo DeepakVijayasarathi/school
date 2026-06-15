@@ -120,6 +120,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     // Homework
     public DbSet<Homework> Homeworks => Set<Homework>();
 
+    // Report Cards
+    public DbSet<ReportCardTemplate> ReportCardTemplates => Set<ReportCardTemplate>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -237,6 +240,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Payslip>()
             .Property(p => p.Deductions)
             .HasColumnType("jsonb");
+
+        // Report Card Templates — per-tenant (controller manually filters by TenantId)
+        modelBuilder.Entity<ReportCardTemplate>()
+            .HasKey(t => t.Id);
+
+        // TODO: run 'dotnet ef migrations add AddReportCardTemplate' in SchoolKart.Infrastructure
 
     }
 

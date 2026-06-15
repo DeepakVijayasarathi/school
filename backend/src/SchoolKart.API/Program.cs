@@ -20,9 +20,11 @@ builder.Host.UseSerilog((ctx, lc) => lc
     .ReadFrom.Configuration(ctx.Configuration)
     .WriteTo.Console());
 
-// Database
-var npgsqlDataSource = new NpgsqlDataSourceBuilder(
-    builder.Configuration.GetConnectionString("DefaultConnection"))
+// Database — fail fast if the connection string is missing
+var connStr = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured. Set it in appsettings or environment variables.");
+
+var npgsqlDataSource = new NpgsqlDataSourceBuilder(connStr)
     .EnableDynamicJson()
     .Build();
 builder.Services.AddDbContext<AppDbContext>(opt =>
@@ -63,7 +65,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidAudience = builder.Configuration["Jwt:Audience"],
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+            // JWT stores the role in a "role" claim (not the default ClaimTypes.Role URI).
+            // MapInboundClaims=false preserves the short name, so we must tell the token
+            // validator which claim name carries the role so [Authorize(Roles=...)] works.
+            RoleClaimType = "role"
         };
 
         // Support JWT from SignalR query string

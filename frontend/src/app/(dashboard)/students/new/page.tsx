@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { studentsApi, schoolApi } from '@/lib/api'
 import { cn } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, Check, Save } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check } from 'lucide-react'
 
 const STEPS = [
   { id: 1, title: 'Basic Info',     desc: 'Name, DOB, gender' },
@@ -336,9 +336,6 @@ export default function NewStudentPage() {
         </button>
 
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">
-            <Save className="w-4 h-4" /> Save Draft
-          </button>
           {step < 7 ? (
             <button
               onClick={next}

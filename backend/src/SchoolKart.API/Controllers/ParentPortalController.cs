@@ -168,17 +168,20 @@ public class ParentPortalController(AppDbContext db, ITenantContext tenant) : Co
     public IActionResult Register() =>
         Ok(new { message = "Parent registration must be done by school staff." });
 
-    // ─── Get children for a parent (by ?parentId= query param) ───
+    // ─── Get children for the authenticated parent (resolved from JWT sub claim) ───
 
     [HttpGet("children")]
-    public async Task<IActionResult> GetChildren([FromQuery] Guid? parentId, CancellationToken ct)
+    public async Task<IActionResult> GetChildren(CancellationToken ct)
     {
-        if (!parentId.HasValue)
-            return BadRequest(new { error = "parentId query parameter is required." });
+        // Resolve the parent record from the authenticated user's identity rather than
+        // relying on a caller-supplied parentId query param (which is an IDOR risk).
+        var parent = await db.Parents
+            .FirstOrDefaultAsync(p => p.TenantId == tenant.TenantId && p.UserId == tenant.UserId, ct);
+        if (parent is null) return NotFound(new { message = "Parent record not found for this account." });
 
         var mappings = await db.Set<ParentStudentMapping>()
             .Include(m => m.Student)
-            .Where(m => m.ParentId == parentId && m.TenantId == tenant.TenantId)
+            .Where(m => m.ParentId == parent.Id && m.TenantId == tenant.TenantId)
             .ToListAsync(ct);
 
         var result = mappings.Select(m => new
@@ -202,35 +205,55 @@ public class ParentPortalController(AppDbContext db, ITenantContext tenant) : Co
             .Where(m => m.ParentId == parentId && m.TenantId == tenant.TenantId)
             .ToListAsync(ct);
 
-        var children = new List<ChildSummaryDto>();
+        var students = mappings.Select(m => m.Student).Where(s => s is not null).ToList();
+        if (students.Count == 0)
+            return Ok(new ParentDashboardDto(new List<ChildSummaryDto>()));
 
-        foreach (var mapping in mappings)
-        {
-            var student = mapping.Student;
-            if (student is null) continue;
+        var studentIds = students.Select(s => s!.Id).ToList();
 
-            var currentYear = await db.AcademicYears
-                .FirstOrDefaultAsync(a => a.TenantId == tenant.TenantId && a.IsCurrent, ct);
+        // Load current academic year once
+        var currentYear = await db.AcademicYears
+            .FirstOrDefaultAsync(a => a.TenantId == tenant.TenantId && a.IsCurrent, ct);
 
-            var enrollment = await db.StudentEnrollments
+        // Batch-load enrollments for all children
+        var allEnrollments = currentYear is not null
+            ? await db.StudentEnrollments
                 .Include(e => e.Class).Include(e => e.Section)
-                .FirstOrDefaultAsync(e => e.StudentId == student.Id && e.AcademicYearId == currentYear!.Id, ct);
+                .Where(e => studentIds.Contains(e.StudentId) && e.AcademicYearId == currentYear.Id)
+                .ToListAsync(ct)
+            : new List<StudentEnrollment>();
+        var enrollmentMap = allEnrollments.ToDictionary(e => e.StudentId);
 
-            var attendanceRecords = await db.Set<StudentAttendance>()
-                .Where(a => a.StudentId == student.Id && a.TenantId == tenant.TenantId)
-                .ToListAsync(ct);
+        // Batch-load attendance for all children
+        var allAttendance = await db.Set<StudentAttendance>()
+            .Where(a => studentIds.Contains(a.StudentId) && a.TenantId == tenant.TenantId)
+            .ToListAsync(ct);
+        var attendanceByStudent = allAttendance.GroupBy(a => a.StudentId).ToDictionary(g => g.Key, g => g.ToList());
 
-            var totalDays = attendanceRecords.Count;
-            var presentDays = attendanceRecords.Count(a => a.Status == Domain.Enums.AttendanceStatus.Present);
-            var absentDays = attendanceRecords.Count(a => a.Status == Domain.Enums.AttendanceStatus.Absent);
+        // Batch-load unpaid fee dues for all children using StudentFees
+        var allFeeDues = await db.StudentFees
+            .Where(f => studentIds.Contains(f.StudentId) && f.TenantId == tenant.TenantId
+                && f.Status != Domain.Enums.PaymentStatus.Paid)
+            .GroupBy(f => f.StudentId)
+            .Select(g => new { StudentId = g.Key, Due = g.Sum(f => f.FinalAmount - f.PaidAmount) })
+            .ToListAsync(ct);
+        var feeDueMap = allFeeDues.ToDictionary(f => f.StudentId, f => f.Due);
+
+        // Load unread messages count once for the parent
+        var unreadMessages = await db.Set<ParentCommunication>()
+            .CountAsync(c => c.ParentId == parentId && !c.IsRead && c.TenantId == tenant.TenantId, ct);
+
+        var children = new List<ChildSummaryDto>();
+        foreach (var student in students)
+        {
+            var attendance = attendanceByStudent.GetValueOrDefault(student!.Id) ?? new List<StudentAttendance>();
+            var totalDays = attendance.Count;
+            var presentDays = attendance.Count(a => a.Status == Domain.Enums.AttendanceStatus.Present);
+            var absentDays = attendance.Count(a => a.Status == Domain.Enums.AttendanceStatus.Absent);
             var attendancePercent = totalDays > 0 ? (decimal)presentDays / totalDays * 100 : 0;
 
-            var feeDues = await db.Set<FeeRecord>()
-                .Where(f => f.StudentId == student.Id && f.TenantId == tenant.TenantId && f.Status != "paid")
-                .SumAsync(f => f.Amount - f.PaidAmount, ct);
-
-            var unreadMessages = await db.Set<ParentCommunication>()
-                .CountAsync(c => c.ParentId == parentId && !c.IsRead && c.TenantId == tenant.TenantId, ct);
+            enrollmentMap.TryGetValue(student.Id, out var enrollment);
+            feeDueMap.TryGetValue(student.Id, out var feeDues);
 
             children.Add(new ChildSummaryDto(
                 student.Id,
@@ -248,7 +271,7 @@ public class ParentPortalController(AppDbContext db, ITenantContext tenant) : Co
 
     [HttpGet("children/{studentId:guid}/dashboard")]
     public Task<IActionResult> GetChildDashboardAlias(Guid studentId, CancellationToken ct) =>
-        GetDashboard(studentId, ct);
+        GetDashboard(tenant.UserId, ct);
 
     [HttpGet("children/{studentId:guid}/attendance")]
     [HttpGet("child/{studentId:guid}/attendance")]

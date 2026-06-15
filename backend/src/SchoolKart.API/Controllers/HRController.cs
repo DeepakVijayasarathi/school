@@ -110,6 +110,7 @@ public class HRController(AppDbContext db, ITenantContext tenant) : ControllerBa
     }
 
     [HttpPost("employees")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> CreateEmployee([FromBody] CreateEmployeeRequest req, CancellationToken ct)
     {
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(req.Password ?? "Welcome@123");
@@ -133,7 +134,8 @@ public class HRController(AppDbContext db, ITenantContext tenant) : ControllerBa
             .OrderByDescending(e => e.CreatedAt)
             .FirstOrDefaultAsync(ct);
 
-        var seq = lastEmp is null ? 1 : int.Parse(lastEmp.EmployeeCode.Split('/').Last()) + 1;
+        var seq = lastEmp is null ? 1
+            : (int.TryParse(lastEmp.EmployeeCode.Split('/').Last(), out var n) ? n : 0) + 1;
         var empCode = $"EMP/{seq:D4}";
 
         var employee = new Employee
@@ -165,6 +167,7 @@ public class HRController(AppDbContext db, ITenantContext tenant) : ControllerBa
     }
 
     [HttpPut("employees/{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> UpdateEmployee(Guid id, [FromBody] UpdateEmployeeRequest req, CancellationToken ct)
     {
         var employee = await db.Set<Employee>().Include(e => e.User)
@@ -233,6 +236,7 @@ public class HRController(AppDbContext db, ITenantContext tenant) : ControllerBa
     }
 
     [HttpPost("payroll/process")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> ProcessPayroll([FromBody] ProcessPayrollRequest req, CancellationToken ct)
     {
         var existing = await db.Set<Payroll>()

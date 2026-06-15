@@ -1,7 +1,12 @@
 import axios, { AxiosError } from 'axios'
 import toast from 'react-hot-toast'
+import { useAuthStore } from '@/store/auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000'
+
+if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_API_URL && process.env.NODE_ENV === 'production') {
+  console.error('[SchoolKart] NEXT_PUBLIC_API_URL is not set — all API calls will fail. Check your environment variables.')
+}
 
 // SSR-safe storage helpers
 const storage = {
@@ -11,7 +16,7 @@ const storage = {
 }
 
 function clearAuthAndRedirect() {
-  storage.remove('access_token', 'refresh_token')
+  useAuthStore.getState().clearAuth()
   if (typeof window !== 'undefined') window.location.href = '/login'
 }
 

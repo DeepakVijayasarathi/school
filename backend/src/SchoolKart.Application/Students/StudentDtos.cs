@@ -35,6 +35,8 @@ public record CreateStudentRequest(
 public record UpdateStudentRequest(
     string? FirstName,
     string? LastName,
+    Gender? Gender,
+    DateOnly? DateOfBirth,
     BloodGroup? BloodGroup,
     string? Religion,
     string? Caste,

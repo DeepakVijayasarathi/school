@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { parentsApi } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { Plus, Search, Users, MessageSquare, X, Loader2, Phone, Mail } from 'lucide-react'
+import { Plus, Search, Users, MessageSquare, X, Loader2, Phone, Mail, Calendar } from 'lucide-react'
 
 const inputCls = 'input-base focus-ring w-full'
 
@@ -32,7 +32,7 @@ export default function ParentPortalPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState({ ...emptyParent })
   const [selected, setSelected] = useState<any>(null)
-  const [tab, setTab] = useState<'parents' | 'messages'>('parents')
+  const [tab, setTab] = useState<'parents' | 'messages' | 'ptm'>('parents')
   const qc = useQueryClient()
 
   const { data, isLoading } = useQuery({
@@ -80,14 +80,14 @@ export default function ParentPortalPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--surface-2)' }}>
-        {(['parents', 'messages'] as const).map(t => (
+        {(['parents', 'messages', 'ptm'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={cn('px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all',
               tab === t ? 'shadow' : '')}
             style={tab === t
               ? { background: 'var(--surface)', color: 'var(--text-1)' }
               : { color: 'var(--text-3)' }}>
-            {t === 'messages' ? 'Messages' : 'Parents'}
+            {t === 'messages' ? 'Messages' : t === 'ptm' ? 'PTM' : 'Parents'}
           </button>
         ))}
       </div>
@@ -170,6 +170,14 @@ export default function ParentPortalPage() {
           <MessageSquare className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-4)' }} />
           <p className="text-sm font-medium" style={{ color: 'var(--text-3)' }}>Parent Messages</p>
           <p className="text-xs mt-1" style={{ color: 'var(--text-4)' }}>Select a parent to view or send messages</p>
+        </div>
+      )}
+
+      {tab === 'ptm' && (
+        <div className="card p-10 text-center">
+          <Calendar className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-4)' }} />
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-2)' }}>Parent-Teacher Meetings</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-4)' }}>PTM scheduling will be available soon.</p>
         </div>
       )}
 

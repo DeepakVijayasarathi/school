@@ -64,10 +64,15 @@ export default function FeesPage() {
   const summary = studentFees?.summary
   const totalPending = dues?.reduce((s: number, d: any) => s + d.pending, 0) ?? 0
 
+  const today = new Date().toISOString().slice(0, 10)
+  const todayCollected = dues
+    ?.filter((p: any) => p.paidAt?.startsWith(today))
+    .reduce((sum: number, p: any) => sum + (p.amount ?? 0), 0) ?? 0
+
   const STATS = [
-    { label: 'Students with dues',  value: dues?.length ?? 0,          icon: AlertCircle,  bg: 'var(--danger-bg)',  color: 'var(--danger)'  },
-    { label: 'Total pending',        value: formatCurrency(totalPending), icon: DollarSign,   bg: 'var(--warning-bg)', color: 'var(--warning)' },
-    { label: 'Today collected',      value: formatCurrency(0),           icon: CheckCircle2, bg: 'var(--success-bg)', color: 'var(--success)' },
+    { label: 'Students with dues',  value: dues?.length ?? 0,              icon: AlertCircle,  bg: 'var(--danger-bg)',  color: 'var(--danger)'  },
+    { label: 'Total pending',        value: formatCurrency(totalPending),   icon: DollarSign,   bg: 'var(--warning-bg)', color: 'var(--warning)' },
+    { label: 'Today collected',      value: formatCurrency(todayCollected), icon: CheckCircle2, bg: 'var(--success-bg)', color: 'var(--success)' },
   ]
 
   return (
@@ -275,7 +280,10 @@ export default function FeesPage() {
                   key={i}
                   className="w-full text-left px-5 py-3.5 flex items-center justify-between transition-colors hover:bg-[var(--brand-bg)]"
                   style={{ borderBottom: '1px solid var(--border)' }}
-                  onClick={() => setSelectedStudentId(due.studentId ?? '')}
+                  onClick={() => {
+                    if (!due.studentId) { toast.error('Student ID missing on this record'); return }
+                    setSelectedStudentId(due.studentId)
+                  }}
                 >
                   <div className="min-w-0">
                     <p className="text-[13px] font-semibold truncate" style={{ color: 'var(--text-1)' }}>

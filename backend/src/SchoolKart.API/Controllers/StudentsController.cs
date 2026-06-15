@@ -149,21 +149,26 @@ public class StudentsController(AppDbContext db, ITenantContext tenant) : Contro
     }
 
     [HttpPost]
+    [Authorize(Roles = "school_admin,super_admin,receptionist")]
     public async Task<IActionResult> Create([FromBody] CreateStudentRequest request, CancellationToken ct)
     {
-        // Atomic admission number: count existing students for this tenant (safe under concurrency)
-        var existing = await db.Students
-            .CountAsync(s => s.TenantId == tenant.TenantId, ct);
-
+        // Admission number: use MAX of existing sequence numbers for current year to avoid race conditions
         var year = DateTime.UtcNow.Year.ToString()[2..];
-        var seq = existing + 1;
-        var admissionNumber = $"ADM/{year}/{seq:D4}";
+        var prefix = $"ADM/{year}/";
+        var maxSeq = await db.Students
+            .Where(s => s.TenantId == tenant.TenantId && s.AdmissionNumber.StartsWith(prefix))
+            .Select(s => s.AdmissionNumber.Substring(prefix.Length))
+            .ToListAsync(ct);
+        var nextSeq = maxSeq
+            .Select(n => int.TryParse(n, out var v) ? v : 0)
+            .DefaultIfEmpty(0).Max() + 1;
+        var admissionNumber = $"ADM/{year}/{nextSeq:D4}";
 
-        // Guard against duplicate (race condition: re-count if collision)
+        // Final unique-index safety net against concurrent inserts
         while (await db.Students.AnyAsync(s => s.AdmissionNumber == admissionNumber && s.TenantId == tenant.TenantId, ct))
         {
-            seq++;
-            admissionNumber = $"ADM/{year}/{seq:D4}";
+            nextSeq++;
+            admissionNumber = $"ADM/{year}/{nextSeq:D4}";
         }
 
         var student = new Student
@@ -243,6 +248,8 @@ public class StudentsController(AppDbContext db, ITenantContext tenant) : Contro
 
         if (request.FirstName is not null) student.FirstName = request.FirstName;
         if (request.LastName is not null) student.LastName = request.LastName;
+        if (request.Gender.HasValue) student.Gender = request.Gender.Value;
+        if (request.DateOfBirth.HasValue) student.DateOfBirth = request.DateOfBirth.Value;
         if (request.BloodGroup.HasValue) student.BloodGroup = request.BloodGroup;
         if (request.Religion is not null) student.Religion = request.Religion;
         if (request.Caste is not null) student.Caste = request.Caste;
@@ -260,16 +267,21 @@ public class StudentsController(AppDbContext db, ITenantContext tenant) : Contro
     }
 
     [HttpPost("promote")]
+    [Authorize(Roles = "school_admin,super_admin,teacher")]
     public async Task<IActionResult> Promote([FromBody] PromoteStudentsRequest request, CancellationToken ct)
     {
         var promotions = new List<StudentEnrollment>();
 
+        // Batch-load all enrollments for the source academic year to avoid N+1 queries
+        var studentIds = request.Students.Select(s => s.StudentId).ToList();
+        var enrollments = await db.StudentEnrollments
+            .Where(e => studentIds.Contains(e.StudentId) && e.AcademicYearId == request.FromAcademicYearId)
+            .ToListAsync(ct);
+        var enrollmentMap = enrollments.ToDictionary(e => e.StudentId);
+
         foreach (var item in request.Students)
         {
-            var currentEnrollment = await db.StudentEnrollments
-                .FirstOrDefaultAsync(e => e.StudentId == item.StudentId && e.AcademicYearId == request.FromAcademicYearId, ct);
-
-            if (currentEnrollment is null) continue;
+            if (!enrollmentMap.TryGetValue(item.StudentId, out var currentEnrollment)) continue;
 
             currentEnrollment.IsPromoted = item.Status == PromotionStatus.Promoted;
             currentEnrollment.PromotedToClassId = item.ToClassId;
@@ -293,6 +305,7 @@ public class StudentsController(AppDbContext db, ITenantContext tenant) : Contro
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "school_admin,super_admin")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         var student = await db.Students

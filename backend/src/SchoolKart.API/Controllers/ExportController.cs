@@ -85,21 +85,29 @@ public class ExportController(AppDbContext db, ITenantContext tenant) : Controll
         var records = await q.OrderBy(a => a.Date).ThenBy(a => a.StudentId).ToListAsync(ct);
 
         var studentIds = records.Select(r => r.StudentId).Distinct().ToList();
+        var sectionIds = records.Select(r => r.SectionId).Distinct().ToList();
+
         var students = await db.Students.Where(s => studentIds.Contains(s.Id)).ToListAsync(ct);
+        var sections = await db.Sections
+            .Include(s => s.Class)
+            .Where(s => sectionIds.Contains(s.Id))
+            .ToListAsync(ct);
 
         var headers = new[] { "Date", "Admission No", "Student Name", "Class", "Section", "Status", "Remarks" };
 
         var studentMap = students.ToDictionary(s => s.Id);
+        var sectionMap = sections.ToDictionary(s => s.Id);
         var rows = records.Select(r =>
         {
             studentMap.TryGetValue(r.StudentId, out var student);
+            sectionMap.TryGetValue(r.SectionId, out var section);
             return new[]
             {
                 r.Date.ToString("yyyy-MM-dd"),
                 student?.AdmissionNumber ?? "",
                 student?.FullName ?? "",
-                "", // class name - would need join
-                "", // section name
+                section?.Class?.Name ?? "",
+                section?.Name ?? "",
                 r.Status.ToString(),
                 r.Remarks ?? ""
             };
@@ -117,35 +125,40 @@ public class ExportController(AppDbContext db, ITenantContext tenant) : Controll
         [FromQuery] Guid? academicYearId, [FromQuery] string? status,
         [FromQuery] string format = "csv", CancellationToken ct = default)
     {
-        var q = db.Set<FeeRecord>().Where(f => f.TenantId == tenant.TenantId);
-
-        if (academicYearId.HasValue) q = q.Where(f => f.AcademicYearId == academicYearId);
-        if (!string.IsNullOrEmpty(status)) q = q.Where(f => f.Status == status);
-
-        var records = await q.OrderBy(f => f.StudentId).ThenBy(f => f.DueDate).ToListAsync(ct);
-
-        var studentIds = records.Select(r => r.StudentId).Distinct().ToList();
-        var students = await db.Students.Where(s => studentIds.Contains(s.Id)).ToListAsync(ct);
-        var studentMap = students.ToDictionary(s => s.Id);
-
-        var headers = new[] { "Admission No", "Student Name", "Fee Type", "Amount", "Paid Amount",
-            "Balance", "Due Date", "Status", "Paid Date" };
-
-        var rows = records.Select(f =>
-        {
-            studentMap.TryGetValue(f.StudentId, out var student);
-            return new[]
+        var paymentsQuery =
+            from fp in db.FeePayments
+            join sf in db.StudentFees on fp.StudentFeeId equals sf.Id
+            join s in db.Students on fp.StudentId equals s.Id
+            join fc in db.FeeCategories on sf.FeeCategoryId equals fc.Id into fcJoin
+            from fc in fcJoin.DefaultIfEmpty()
+            where fp.TenantId == tenant.TenantId
+                && (!academicYearId.HasValue || sf.AcademicYearId == academicYearId)
+                && (string.IsNullOrEmpty(status) || sf.Status.ToString().ToLower() == status.ToLower())
+            orderby s.AdmissionNumber, fp.PaidAt
+            select new
             {
-                student?.AdmissionNumber ?? "",
-                student?.FullName ?? "",
-                f.FeeTypeId.ToString(),
-                f.Amount.ToString("N2"),
-                f.PaidAmount.ToString("N2"),
-                (f.Amount - f.PaidAmount).ToString("N2"),
-                f.DueDate?.ToString("yyyy-MM-dd") ?? "",
-                f.Status,
-                f.LastPaymentDate?.ToString("yyyy-MM-dd") ?? ""
+                StudentName = s.FullName,
+                AdmissionNumber = s.AdmissionNumber,
+                FeeType = fc != null ? fc.Name : "—",
+                Amount = fp.Amount,
+                PaidAt = fp.PaidAt,
+                PaymentMode = fp.Method.ToString(),
+                Status = sf.Status.ToString()
             };
+
+        var records = await paymentsQuery.ToListAsync(ct);
+
+        var headers = new[] { "Admission No", "Student Name", "Fee Type", "Amount", "Paid At", "Payment Mode", "Status" };
+
+        var rows = records.Select(f => new[]
+        {
+            f.AdmissionNumber,
+            f.StudentName,
+            f.FeeType,
+            f.Amount.ToString("N2"),
+            f.PaidAt.ToString("yyyy-MM-dd HH:mm"),
+            f.PaymentMode,
+            f.Status
         });
 
         return format.ToLower() == "csv"
